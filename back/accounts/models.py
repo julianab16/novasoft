@@ -9,6 +9,7 @@ class User(AbstractUser):
         JEFE_TALLER = "jefe_taller", "Jefe de Taller"
         SST = "sst", "Encargado de SST"
         ADMINISTRADOR = "administrador", "Administrador"
+        LECTURA = "solo_lectura", "Solo consulta"
 
     document = models.CharField("cédula de identidad", max_length=30, unique=True)
     full_name = models.CharField("nombre completo", max_length=150)

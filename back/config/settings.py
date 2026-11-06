@@ -58,19 +58,20 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default={
+DATABASE_URL = env("DATABASE_URL", default="")
+if DATABASE_URL:
+    DATABASES = {"default": env.db_url_config(DATABASE_URL)}
+else:
+    DATABASES = {
+        "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": env("POSTGRES_DB", default="sigope"),
             "USER": env("POSTGRES_USER", default="sigope"),
             "PASSWORD": env("POSTGRES_PASSWORD", default=""),
             "HOST": env("POSTGRES_HOST", default="localhost"),
             "PORT": env("POSTGRES_PORT", default="5432"),
-        },
-    )
-}
+        }
+    }
 
 AUTH_USER_MODEL = "accounts.User"
 AUTH_PASSWORD_VALIDATORS = [

@@ -1,4 +1,7 @@
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 
 from accounts.permissions import IsAdministrator
 
@@ -28,9 +31,19 @@ class EquipmentTypeViewSet(AdminModelViewSet):
     search_fields = ("name",)
     filterset_fields = ("is_active",)
 
-    def perform_destroy(self, instance):
+    @action(detail=True, methods=("post",))
+    def deactivate(self, request, pk=None):
+        instance = self.get_object()
         instance.is_active = False
         instance.save(update_fields=["is_active"])
+        return Response(self.get_serializer(instance).data, status=status.HTTP_200_OK)
+
+    def perform_destroy(self, instance):
+        if instance.equipments.exists():
+            raise ValidationError(
+                {"detail": "No se puede eliminar un tipo de equipo con equipos asociados."}
+            )
+        instance.delete()
 
 
 class EquipmentViewSet(AdminModelViewSet):

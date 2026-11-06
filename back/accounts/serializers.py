@@ -9,10 +9,15 @@ class LoginSerializer(TokenObtainPairSerializer):
     username_field = "username"
 
     def validate(self, attrs):
-        user = authenticate(username=attrs.get("username"), password=attrs.get("password"))
-        if not user or not user.is_active:
+        username = (attrs.get("username") or "").strip().lower()
+        user_record = User.objects.filter(username=username).first()
+        if user_record and not user_record.is_active:
+            raise serializers.ValidationError("Usuario no activo.")
+
+        user = authenticate(username=username, password=attrs.get("password"))
+        if not user:
             raise serializers.ValidationError("Credenciales inválidas.")
-        return super().validate(attrs)
+        return super().validate({**attrs, "username": username})
 
 
 class UserSerializer(serializers.ModelSerializer):
