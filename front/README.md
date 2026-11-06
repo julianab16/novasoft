@@ -67,24 +67,24 @@ Todas las rutas van bajo `{VITE_API_URL}/api`. Las peticiones envían `Authoriza
 | Acción | Método y ruta | Envía | Responde |
 |---|---|---|---|
 | Iniciar sesión | `POST /auth/login/` | `{ usuario, clave }` | `{ token, nombre, usuario, rol }` |
-| Cerrar sesión | `POST /auth/logout/` | — | — |
-| Listar usuarios | `GET /usuarios/` | — | `Usuario[]` |
-| Crear usuario | `POST /usuarios/` | `Usuario` sin `id` | `Usuario` |
-| Editar / activar / desactivar | `PATCH /usuarios/{id}/` | campos a cambiar | `Usuario` |
-| Restablecer contraseña | `POST /usuarios/{id}/restablecer-clave/` | — | — |
-| Listar roles | `GET /roles/` | — | `Rol[]` |
-| Crear rol | `POST /roles/` | `{ nombre, solo_consulta }` | `Rol` |
-| Guardar permisos | `PUT /roles/{id}/permisos/` | `{ "Inspecciones": "Solo ver", … }` | `Rol` |
-| Listar tipos | `GET /tipos-equipo/` | — | `TipoEquipo[]` |
-| Crear tipo | `POST /tipos-equipo/` | `{ nombre, descripcion, activo }` | `TipoEquipo` |
-| Editar / activar tipo | `PATCH /tipos-equipo/{id}/` | campos a cambiar | `TipoEquipo` |
-| Eliminar tipo | `DELETE /tipos-equipo/{id}/` | — | `204` |
-| Listar equipos | `GET /equipos/` | — | `Equipo[]` |
-| Registrar equipo | `POST /equipos/` | `Equipo` sin `id` ni `modificado` | `Equipo` |
-| Editar equipo | `PATCH /equipos/{id}/` | campos a cambiar | `Equipo` |
-| Listar listas | `GET /listas-inspeccion/` | — | `ListaInspeccion[]` |
-| Crear lista | `POST /listas-inspeccion/` | `{ tipo }` | `ListaInspeccion` |
-| Actualizar lista | `PUT /listas-inspeccion/{id}/` | `{ secciones }` | `ListaInspeccion` |
+| Cerrar sesión | `POST /accounts/logout/` | — | — |
+| Listar usuarios | `GET /accounts/users/` | — | `Usuario[]` |
+| Crear usuario | `POST /accounts/users/` | `Usuario` sin `id` | `Usuario` |
+| Editar / activar / desactivar | `PATCH /accounts/users/{id}/` | campos a cambiar | `Usuario` |
+| Restablecer contraseña | `POST /accounts/users/{id}/reset-password/` (pendiente en el back) | — | — |
+| Listar roles | `GET /accounts/roles/` (pendiente en el back) | — | `Rol[]` |
+| Crear rol | `POST /accounts/roles/` (pendiente en el back) | `{ nombre, solo_consulta }` | `Rol` |
+| Guardar permisos | `PUT /accounts/roles/{id}/permissions/` (pendiente en el back) | `{ "Inspecciones": "Solo ver", … }` | `Rol` |
+| Listar tipos | `GET /catalog/equipment-types/` | — | `TipoEquipo[]` |
+| Crear tipo | `POST /catalog/equipment-types/` | `{ nombre, descripcion, activo }` | `TipoEquipo` |
+| Editar / activar tipo | `PATCH /catalog/equipment-types/{id}/` | campos a cambiar | `TipoEquipo` |
+| Eliminar tipo | `DELETE /catalog/equipment-types/{id}/` | — | `204` |
+| Listar equipos | `GET /catalog/equipments/` | — | `Equipo[]` |
+| Registrar equipo | `POST /catalog/equipments/` | `Equipo` sin `id` ni `modificado` | `Equipo` |
+| Editar equipo | `PATCH /catalog/equipments/{id}/` | campos a cambiar | `Equipo` |
+| Listar listas | `GET /catalog/checklists/` | — | `ListaInspeccion[]` |
+| Crear lista | `POST /catalog/checklists/` | `{ tipo }` | `ListaInspeccion` |
+| Actualizar lista | `PUT /catalog/checklists/{id}/` | `{ secciones }` | `ListaInspeccion` |
 
 La forma de cada objeto está en `src/types.ts`.
 

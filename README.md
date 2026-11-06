@@ -1,71 +1,53 @@
-# SIGOPE Backend
+# SIGOPE
 
-Backend modular de SIGOPE para gestionar usuarios, equipos, tipos de equipo,
-listas de inspección e inspecciones. Esta implementación cubre el alcance
-concretado en HU-01 a HU-06 del documento recibido.
+Sistema para gestionar usuarios, equipos, tipos de equipo, listas de
+inspección e inspecciones.
 
-## Tecnologías
+El repositorio tiene dos partes independientes:
 
-- Python 3.12+
-- Django 5.1 y Django REST Framework
-- PostgreSQL
-- JWT con SimpleJWT
-- Grupos/permisos de Django y control de roles de negocio
-- django-simple-history
-- drf-spectacular (OpenAPI/Swagger)
+```text
+SIGOPE/
+├── back/    API REST en Django + Django REST Framework (PostgreSQL, JWT)
+├── front/   Vistas de administración en React + TypeScript + Vite + Tailwind
+└── docs/    Arquitectura y modelo de base de datos
+```
 
-## Puesta en marcha
+Cada parte tiene su propio README con los detalles:
 
-```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
+- [back/README.md](back/README.md): instalación, autenticación, endpoints y módulos.
+- [front/README.md](front/README.md): ejecución, estructura, endpoints que espera y reglas de validación.
+- [docs/architecture.md](docs/architecture.md) y [docs/database.md](docs/database.md).
+
+## Puesta en marcha rápida
+
+### Backend
+
+Necesita Python 3.12+ y PostgreSQL.
+
+```bash
+cd back
+python -m venv .venv
+source .venv/bin/activate        # En Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-Copy-Item .env.example .env
+cp .env.example .env             # Configurar PostgreSQL y DJANGO_SECRET_KEY
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Configura PostgreSQL en `.env`; nunca uses el valor de desarrollo de
-`DJANGO_SECRET_KEY` en producción.
+La API queda en `http://localhost:8000` y la documentación Swagger en
+`http://localhost:8000/api/docs/`.
 
-## Autenticación
+### Frontend
 
-Obtén tokens en `POST /api/auth/login/`:
+Necesita Node.js 18+.
 
-```json
-{"username": "usuario", "password": "contraseña"}
+```bash
+cd front
+npm install
+cp .env.example .env             # VITE_API_URL=http://localhost:8000 para usar el backend
+npm run dev
 ```
 
-Usa el token recibido en `Authorization: Bearer <access>`. El access token
-expira según `JWT_ACCESS_MINUTES`; el refresh token se renueva en
-`POST /api/auth/refresh/`.
-
-## API
-
-- Usuarios: `/api/accounts/users/` y `/api/accounts/logout/`
-- Catálogo: `/api/catalog/equipment-types/`, `/equipments/`,
-  `/item-categories/`, `/items/`, `/checklists/`
-- Inspecciones: `/api/inspections/records/`
-- OpenAPI JSON: `/api/schema/`
-- Swagger UI: `/api/docs/`
-
-Las operaciones administrativas requieren el rol `administrador`. La
-desactivación es lógica y conserva el historial. Los tipos con equipos
-asociados no pueden eliminarse físicamente porque la relación usa `PROTECT`.
-Las modificaciones de listas incrementan su versión; las inspecciones guardan
-la versión aplicada.
-
-## Estructura
-
-```text
-config/        configuración, URLs y excepciones
-accounts/      usuarios, roles, autenticación y administración de usuarios
-catalog/       tipos, equipos, categorías, ítems y listas versionadas
-inspections/   registros y respuestas de inspección
-```
-
-No se han creado archivos de pruebas, conforme al alcance solicitado. Los
-módulos `maintenance`, `sst`, `documents`, `notifications` y `reports` fueron
-identificados en la arquitectura, pero no tienen historias ni modelos
-concretos en la especificación recibida y por eso no se implementan todavía.
+Se abre en `http://localhost:5173`. Si `VITE_API_URL` se deja vacía, el front
+funciona con datos de prueba (ver [front/README.md](front/README.md)).

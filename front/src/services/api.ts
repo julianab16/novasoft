@@ -3,8 +3,8 @@
 //
 // - Si VITE_API_URL está vacío, se usan datos de prueba en memoria (mockApi.ts).
 // - Si tiene una URL, se hacen peticiones HTTP a los endpoints de `httpApi`.
-//   Las rutas son una propuesta para Django REST Framework; si el backend usa otras,
-//   solo hay que cambiarlas aquí.
+//   Las rutas siguen las URLs del backend (back/config/urls.py y los urls.py de cada app);
+//   si el backend cambia, solo hay que cambiarlas aquí.
 
 import type { Equipo, ListaInspeccion, Modulo, Nivel, Rol, Sesion, TipoEquipo, Usuario } from "../types";
 import { ApiError } from "./ApiError";
@@ -69,36 +69,38 @@ const httpApi: Api = {
       return s;
     },
     async logout() {
-      await http("POST", "/auth/logout/").catch(() => undefined);
+      await http("POST", "/accounts/logout/").catch(() => undefined);
       token = "";
     },
   },
   usuarios: {
-    listar: () => http("GET", "/usuarios/"),
-    crear: (datos) => http("POST", "/usuarios/", datos),
-    actualizar: (id, datos) => http("PATCH", `/usuarios/${id}/`, datos),
-    restablecerClave: (id) => http("POST", `/usuarios/${id}/restablecer-clave/`),
+    listar: () => http("GET", "/accounts/users/"),
+    crear: (datos) => http("POST", "/accounts/users/", datos),
+    actualizar: (id, datos) => http("PATCH", `/accounts/users/${id}/`, datos),
+    // Pendiente en el backend: acción `reset-password` en UserViewSet.
+    restablecerClave: (id) => http("POST", `/accounts/users/${id}/reset-password/`),
   },
+  // Pendiente en el backend: RoleViewSet en accounts (con acción `permissions`).
   roles: {
-    listar: () => http("GET", "/roles/"),
-    crear: (nombre, soloConsulta) => http("POST", "/roles/", { nombre, solo_consulta: soloConsulta }),
-    guardarPermisos: (id, permisos) => http("PUT", `/roles/${id}/permisos/`, permisos),
+    listar: () => http("GET", "/accounts/roles/"),
+    crear: (nombre, soloConsulta) => http("POST", "/accounts/roles/", { nombre, solo_consulta: soloConsulta }),
+    guardarPermisos: (id, permisos) => http("PUT", `/accounts/roles/${id}/permissions/`, permisos),
   },
   tipos: {
-    listar: () => http("GET", "/tipos-equipo/"),
-    crear: (datos) => http("POST", "/tipos-equipo/", datos),
-    actualizar: (id, datos) => http("PATCH", `/tipos-equipo/${id}/`, datos),
-    eliminar: (id) => http("DELETE", `/tipos-equipo/${id}/`),
+    listar: () => http("GET", "/catalog/equipment-types/"),
+    crear: (datos) => http("POST", "/catalog/equipment-types/", datos),
+    actualizar: (id, datos) => http("PATCH", `/catalog/equipment-types/${id}/`, datos),
+    eliminar: (id) => http("DELETE", `/catalog/equipment-types/${id}/`),
   },
   equipos: {
-    listar: () => http("GET", "/equipos/"),
-    crear: (datos) => http("POST", "/equipos/", datos),
-    actualizar: (id, datos) => http("PATCH", `/equipos/${id}/`, datos),
+    listar: () => http("GET", "/catalog/equipments/"),
+    crear: (datos) => http("POST", "/catalog/equipments/", datos),
+    actualizar: (id, datos) => http("PATCH", `/catalog/equipments/${id}/`, datos),
   },
   listas: {
-    listar: () => http("GET", "/listas-inspeccion/"),
-    crear: (tipo) => http("POST", "/listas-inspeccion/", { tipo }),
-    actualizar: (id, datos) => http("PUT", `/listas-inspeccion/${id}/`, datos),
+    listar: () => http("GET", "/catalog/checklists/"),
+    crear: (tipo) => http("POST", "/catalog/checklists/", { tipo }),
+    actualizar: (id, datos) => http("PUT", `/catalog/checklists/${id}/`, datos),
   },
 };
 
