@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import AccessLevel, Module, Role, User
+from .models import AccessLevel, Module, Role, User, permissions_with
 
 
 class AccountApiTests(APITestCase):
@@ -291,3 +291,53 @@ class AccountApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["code"], "field_team_2")
+
+
+    def test_cannot_create_user_with_duplicate_username_case_insensitively(self):
+        response = self.client.post(
+            "/api/accounts/users/",
+            {
+                "username": " ADMIN ",
+                "full_name": "Another Admin",
+                "document": "10000010",
+                "role": User.Role.OPERARIO,
+                "password": "Another-password-123",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(User.objects.filter(username="admin").count(), 1)
+
+    def test_updated_role_permissions_apply_to_subsequent_requests(self):
+        role = Role.objects.create(
+            code="temporary_viewer",
+            name="Temporary Viewer",
+            permissions=permissions_with(view=(Module.USERS,)),
+        )
+        user = User.objects.create_user(
+            username="temporary-viewer",
+            password="Viewer-password-123",
+            document="10000011",
+            full_name="Temporary Viewer",
+            role=role.code,
+        )
+
+        self.client.force_authenticate(user)
+        allowed_response = self.client.get("/api/accounts/users/")
+
+        self.client.force_authenticate(self.admin)
+        update_response = self.client.put(
+            f"/api/accounts/roles/{role.pk}/permissions/",
+            {Module.USERS: AccessLevel.NONE},
+            format="json",
+        )
+
+        user = User.objects.get(pk=user.pk)
+        self.client.force_authenticate(user)
+        denied_response = self.client.get("/api/accounts/users/")
+
+        self.assertEqual(allowed_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(denied_response.status_code, status.HTTP_403_FORBIDDEN)
+        role.refresh_from_db()
+        self.assertEqual(role.permissions[Module.USERS], AccessLevel.NONE)

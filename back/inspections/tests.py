@@ -153,3 +153,93 @@ class InspectionApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 0)
+
+
+    def test_inspection_accepts_each_supported_response_result(self):
+        for result in ("complies", "does_not_comply", "not_applicable"):
+            with self.subTest(result=result):
+                response = self.client.post(
+                    "/api/inspections/records/",
+                    {
+                        "equipment": self.equipment.identifier,
+                        "checklist": self.checklist.identifier,
+                        "responses": [{"item": self.item.identifier, "result": result}],
+                    },
+                    format="json",
+                )
+
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+                self.assertEqual(response.data["responses"][0]["result"], result)
+
+    def test_inspection_rejects_duplicate_response_for_same_item(self):
+        response = self.client.post(
+            "/api/inspections/records/",
+            {
+                "equipment": self.equipment.identifier,
+                "checklist": self.checklist.identifier,
+                "responses": [
+                    {"item": self.item.identifier, "result": "complies"},
+                    {"item": self.item.identifier, "result": "does_not_comply"},
+                ],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Inspection.objects.count(), 0)
+
+    def test_inspection_rejects_inactive_checklist(self):
+        self.checklist.is_active = False
+        self.checklist.save(update_fields=["is_active"])
+
+        response = self.client.post(
+            "/api/inspections/records/",
+            {
+                "equipment": self.equipment.identifier,
+                "checklist": self.checklist.identifier,
+                "responses": [{"item": self.item.identifier, "result": "complies"}],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Inspection.objects.count(), 0)
+
+    def test_user_with_inspection_view_permission_can_list_other_operators_inspections(self):
+        from accounts.models import Module, Role, permissions_with
+
+        viewer_role = Role.objects.create(
+            code="inspection_auditor",
+            name="Inspection Auditor",
+            permissions=permissions_with(view=(Module.INSPECTIONS,)),
+        )
+        other_operator = User.objects.create_user(
+            username="another-operator",
+            password="Other-password-123",
+            document="30000003",
+            full_name="Another Operator",
+            role=User.Role.OPERARIO,
+        )
+        other_inspection = Inspection.objects.create(
+            equipment=self.equipment,
+            checklist=self.checklist,
+            checklist_version=self.checklist.version,
+            performed_by=other_operator,
+        )
+        InspectionResponse.objects.create(
+            inspection=other_inspection, item=self.item, result="complies"
+        )
+        viewer = User.objects.create_user(
+            username="inspection-auditor",
+            password="Auditor-password-123",
+            document="30000004",
+            full_name="Inspection Auditor",
+            role=viewer_role.code,
+        )
+        self.client.force_authenticate(viewer)
+
+        response = self.client.get("/api/inspections/records/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], other_inspection.pk)

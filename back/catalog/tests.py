@@ -328,3 +328,81 @@ class CatalogApiTests(APITestCase):
         self.assertTrue(category.is_active)
         self.assertEqual(checklist.version, 2)
         self.assertEqual(list(checklist.items.values_list("identifier", flat=True)), ["ENG-01"])
+
+
+    def test_equipment_rejects_duplicate_identifier_case_insensitively(self):
+        equipment_type = EquipmentType.objects.create(name="Dump Truck")
+        Equipment.objects.create(
+            identifier="DT-01",
+            equipment_type=equipment_type,
+            model="Model A",
+        )
+
+        response = self.client.post(
+            "/api/catalog/equipments/",
+            {
+                "identifier": " dt-01 ",
+                "equipment_type": equipment_type.pk,
+                "model": "Model B",
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Equipment.objects.filter(identifier__iexact="DT-01").count(), 1)
+
+    def test_equipment_with_inspections_cannot_be_deleted(self):
+        from inspections.models import Inspection
+
+        equipment_type = EquipmentType.objects.create(name="Loader")
+        equipment = Equipment.objects.create(
+            identifier="LD-01", equipment_type=equipment_type, model="Loader Model"
+        )
+        checklist = InspectionChecklist.objects.create(
+            identifier="CHK-LOADER", name="Loader checklist"
+        )
+        checklist.equipment_types.add(equipment_type)
+        Inspection.objects.create(
+            equipment=equipment,
+            checklist=checklist,
+            checklist_version=checklist.version,
+            performed_by=self.admin,
+        )
+
+        response = self.client.delete(f"/api/catalog/equipments/{equipment.identifier}/")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Equipment.objects.filter(pk=equipment.identifier).exists())
+
+    def test_previous_checklist_version_keeps_its_original_items_after_update(self):
+        equipment_type = EquipmentType.objects.create(name="Excavator")
+        create_response = self.client.post(
+            "/api/catalog/checklists/",
+            {
+                "identifier": "CHK-EXCAVATOR",
+                "name": "Excavator checks",
+                "equipment_types": [equipment_type.pk],
+                "sections": [
+                    {"title": "Engine", "items": [{"text": "Check oil level"}]}
+                ],
+            },
+            format="json",
+        )
+        checklist = InspectionChecklist.objects.get(identifier="CHK-EXCAVATOR")
+        old_snapshot = ChecklistVersion.objects.get(checklist=checklist, version=1)
+
+        update_response = self.client.patch(
+            f"/api/catalog/checklists/{checklist.identifier}/",
+            {
+                "sections": [
+                    {"title": "Engine", "items": [{"text": "Check coolant level"}]}
+                ]
+            },
+            format="json",
+        )
+
+        old_snapshot.refresh_from_db()
+        new_snapshot = ChecklistVersion.objects.get(checklist=checklist, version=2)
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(old_snapshot.sections[0]["items"][0]["text"], "Check oil level")
+        self.assertEqual(new_snapshot.sections[0]["items"][0]["text"], "Check coolant level")
