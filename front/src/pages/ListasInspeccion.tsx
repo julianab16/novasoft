@@ -9,7 +9,7 @@ const contar = (l: ListaInspeccion) => l.secciones.reduce((n, s) => n + s.items.
 export default function ListasInspeccion() {
   const [listas, setListas] = useState<ListaInspeccion[] | null>(null);
   const [tipos, setTipos] = useState<TipoEquipo[]>([]);
-  const [selId, setSelId] = useState<number>();
+  const [selId, setSelId] = useState<string>();
   const [draft, setDraft] = useState<ListaInspeccion | null>(null);
   const [abierta, setAbierta] = useState(0);
   const [nueva, setNueva] = useState<{ tipo: string } | null>(null);
@@ -82,6 +82,7 @@ export default function ListasInspeccion() {
                 <div className="flex flex-col"><button aria-label="Subir" disabled={ii === 0} onClick={() => mover(si, ii, -1)} className="text-slate-400 disabled:text-slate-200"><Icon name="up" size={16} /></button><button aria-label="Bajar" disabled={ii === s.items.length - 1} onClick={() => mover(si, ii, 1)} className="text-slate-400 disabled:text-slate-200"><Icon name="down" size={16} /></button></div>
                 <span className="w-5 shrink-0 text-center text-xs font-black text-slate-400">{ii + 1}</span>
                 <input value={x.texto} placeholder="Escribe el ítem a revisar" onChange={(e) => upd((d) => { d.secciones[si].items[ii].texto = e.target.value; })} className={`${input} min-h-11 min-w-0 flex-1 border-slate-200`} />
+                <button aria-pressed={!!x.critico} title="Marcar o desmarcar como ítem crítico" onClick={() => upd((d) => { d.secciones[si].items[ii].critico = !x.critico; })} className={`h-10 shrink-0 rounded-lg px-2 text-[11px] font-black sm:px-3 ${x.critico ? "bg-red-50 text-red-600" : "text-slate-400 hover:bg-slate-50"}`}>{x.critico ? "Crítico" : "Normal"}</button>
                 <button aria-label="Eliminar ítem" onClick={() => upd((d) => { d.secciones[si].items.splice(ii, 1); })} className="grid size-10 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"><Icon name="x" size={18} /></button>
               </div>)}
               <button onClick={() => upd((d) => { d.secciones[si].items.push({ texto: "" }); })} className="m-4 h-11 w-[calc(100%-2rem)] rounded-xl border border-dashed border-slate-300 text-sm font-bold text-slate-500">+ Agregar ítem</button>

@@ -4,7 +4,13 @@ from simple_history.models import HistoricalRecords
 
 
 class EquipmentType(models.Model):
-    name = models.CharField("nombre del tipo", max_length=100, unique=True)
+    name = models.CharField(
+        "nombre del tipo",
+        max_length=100,
+        unique=True,
+        error_messages={"unique": "Ya existe un tipo con este nombre."},
+    )
+    description = models.TextField("descripción", blank=True, default="", db_default="")
     is_active = models.BooleanField(default=True)
     history = HistoricalRecords()
 
@@ -19,16 +25,34 @@ class EquipmentType(models.Model):
 
 class Equipment(models.Model):
     class Status(models.TextChoices):
-        USABLE = "usable", "Usable"
-        NOT_USABLE = "no_usable", "No usable"
+        USABLE = "usable", "Disponible"
+        MAINTENANCE = "en_mantenimiento", "En mantenimiento"
+        NOT_USABLE = "no_usable", "Fuera de servicio"
 
-    identifier = models.CharField("identificador", max_length=50, primary_key=True)
+    identifier = models.CharField(
+        "identificador",
+        max_length=50,
+        primary_key=True,
+        error_messages={"unique": "Ya existe un equipo con este código o placa."},
+    )
     plate = models.CharField("placa", max_length=30, blank=True)
     equipment_type = models.ForeignKey(
         EquipmentType, on_delete=models.PROTECT, related_name="equipments"
     )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.USABLE)
-    model = models.CharField("modelo", max_length=100)
+    model = models.CharField("marca / modelo", max_length=100)
+    serial_number = models.CharField(
+        "número de serie", max_length=60, blank=True, default="", db_default=""
+    )
+    year = models.PositiveSmallIntegerField("año", null=True, blank=True)
+    hour_meter = models.CharField(
+        "horómetro",
+        max_length=20,
+        blank=True,
+        default="",
+        db_default="",
+        help_text="Horas, o 'SM/SS' si no tiene medidor.",
+    )
     history = HistoricalRecords()
 
     class Meta:
@@ -78,6 +102,44 @@ class InspectionChecklist(models.Model):
 
     def __str__(self):
         return f"{self.name} v{self.version}"
+
+    def sections(self):
+        """Ítems agrupados en secciones consecutivas según su categoría, en orden."""
+        sections = []
+        orders = self.checklistitemorder_set.select_related("item__category").order_by("position")
+        for order in orders:
+            item = order.item
+            if not sections or sections[-1]["category_id"] != item.category_id:
+                sections.append({"category_id": item.category_id, "title": item.category.name, "items": []})
+            sections[-1]["items"].append(
+                {"identifier": item.identifier, "text": item.name, "is_critical": item.is_critical}
+            )
+        return [{"title": s["title"], "items": s["items"]} for s in sections]
+
+
+class ChecklistVersion(models.Model):
+    """Copia fija del contenido de cada versión de una lista.
+
+    Las inspecciones guardan `checklist_version`; con esta tabla se puede ver
+    exactamente qué preguntas tenía la lista cuando se respondió.
+    """
+
+    checklist = models.ForeignKey(
+        InspectionChecklist, on_delete=models.CASCADE, related_name="versions"
+    )
+    version = models.PositiveIntegerField()
+    name = models.CharField(max_length=150)
+    sections = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
+
+    class Meta:
+        ordering = ("-version",)
+        constraints = [
+            models.UniqueConstraint(fields=("checklist", "version"), name="unique_checklist_version")
+        ]
 
 
 class ChecklistItemOrder(models.Model):

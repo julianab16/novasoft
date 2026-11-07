@@ -30,7 +30,7 @@ export const tipos: TipoEquipo[] = [
   { id: 3, nombre: "Compresores / Wagon drill", descripcion: "Compresores Kaishan y Atlas Copco", activo: true },
 ];
 
-const eq = (codigo: string, tipo: string, marca: string, serie: string, anio: string, horometro: string): Omit<Equipo, "id"> => ({ codigo, tipo, marca, serie, anio, horometro, estado: "Disponible", modificado: "Carga inicial · 28/10/2026" });
+const eq = (codigo: string, tipo: string, marca: string, serie: string, anio: string, horometro: string): Omit<Equipo, "id"> => ({ codigo, placa: "", tipo, marca, serie, anio, horometro, estado: "Disponible", modificado: "Carga inicial · 28/10/2026" });
 const equiposBase = [
   eq("CAR-1", "Cargadores", "Caterpillar 966C", "18B01190", "1990", "6509"),
   eq("CAR-2", "Cargadores", "Caterpillar 960F", "9ZJ00219", "1995", "648"),
@@ -48,7 +48,7 @@ const equiposBase = [
   eq("KAISHAN", "Compresores / Wagon drill", "Kaishan 10/12-LGCY", "Pendiente", "", "1688"),
   eq("XAS 750", "Compresores / Wagon drill", "Atlas Copco XAS750", "Pendiente", "", "9242"),
 ];
-export const equipos: Equipo[] = equiposBase.map((e, i) => ({ id: i + 1, ...e }));
+export const equipos: Equipo[] = equiposBase.map((e) => ({ id: e.codigo, ...e }));
 
 const it = (t: string): Item => ({ texto: t });
 const sec = (titulo: string, items: string[]): Seccion => ({ titulo, items: items.map((t) => it(t)) });
@@ -62,7 +62,7 @@ const chasis = ["Fisuras", "Tornillos", "Puentes", "Vigas"];
 const luces = ["Altas", "Medias", "Bajas", "Direccionales", "Estacionarias", "Stop", "Reversa", "Exploradoras"];
 const emergencia = ["Botiquín", "Extintor vigente", "Conos / triángulos reflectivos"];
 export const listas: ListaInspeccion[] = [
-  { id: 1, tipo: "Cargadores", version: 1, secciones: [
+  { id: "CHK-CARGADORES", tipo: "Cargadores", version: 1, secciones: [
     sec("Llantas", [...llantas, "Orugas"]),
     sec("Balde", ["Cilindros hidráulicos de levante", "Lámina", "Uñas", "Herramienta de desgaste"]),
     sec("Carrocería", carroceria), sec("Sistema hidráulico", hidraulico), sec("Motor", motorBase), sec("Batería", bateria),
@@ -73,7 +73,7 @@ export const listas: ListaInspeccion[] = [
     sec("Indicadores en tablero", ["Presión aceite de motor", "Presión de aire", "RPM", "Nivel de combustible", "Carga de batería", "Direccionales", "Temperatura", "Refrigerante motor", "Luces"]),
     sec("Luces", luces), sec("Equipo de emergencia", emergencia),
   ] },
-  { id: 2, tipo: "Volquetas", version: 1, secciones: [
+  { id: "CHK-VOLQUETAS", tipo: "Volquetas", version: 1, secciones: [
     sec("Llantas", llantas),
     sec("Volco", ["Cilindro hidráulico de levante", "Lámina", "Estado general"]),
     sec("Transmisión", ["Espárragos", "Fugas", "Porta-martillos", "Tornillos soportes corbatines"]),
@@ -85,7 +85,7 @@ export const listas: ListaInspeccion[] = [
     sec("Indicadores en tablero", ["Presión aceite de motor", "Presión de aire", "RPM", "Nivel de combustible", "Temperatura", "Refrigerante motor", "Luces"]),
     sec("Luces", luces), sec("Equipo de emergencia", emergencia),
   ] },
-  { id: 3, tipo: "Compresores / Wagon drill", version: 1, secciones: [
+  { id: "CHK-COMPRESORES-WAGON-DRILL", tipo: "Compresores / Wagon drill", version: 1, secciones: [
     sec("Motor", ["Nivel de aceite unidad", "Nivel de refrigerante", "Nivel de aceite motor", "Batería", "Bornes", "Manguera filtro"]),
     sec("Chasis", chasis),
     sec("Aire", ["Filtro aire de motor", "Filtro aire unidad"]),

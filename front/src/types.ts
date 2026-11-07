@@ -1,5 +1,5 @@
-// Modelos que comparten el front y el backend.
-// Los nombres de campos son una propuesta: si el backend usa otros, se ajustan aquí.
+// Modelos del front. El backend usa nombres en inglés; la traducción entre
+// ambos formatos se hace solo en services/api.ts.
 
 export type Usuario = {
   id: number;
@@ -9,6 +9,9 @@ export type Usuario = {
   rol: string; // nombre del rol
   activo: boolean;
 };
+
+/** Respuesta al crear un usuario: si el backend generó la contraseña, la devuelve una sola vez. */
+export type UsuarioCreado = Usuario & { claveTemporal?: string };
 
 export const MODULOS = [
   "Inspecciones",
@@ -43,8 +46,9 @@ export const ESTADOS_EQUIPO = ["Disponible", "En mantenimiento", "Fuera de servi
 export type EstadoEquipo = (typeof ESTADOS_EQUIPO)[number];
 
 export type Equipo = {
-  id: number;
+  id: string; // es el mismo código: identifica al equipo y no se puede cambiar
   codigo: string;
+  placa: string;
   tipo: string; // nombre del tipo de equipo
   marca: string;
   serie: string;
@@ -54,11 +58,11 @@ export type Equipo = {
   modificado: string; // "usuario · fecha" de la última modificación (lo llena el backend)
 };
 
-export type Item = { texto: string };
+export type Item = { texto: string; critico?: boolean };
 export type Seccion = { titulo: string; items: Item[] };
 
 export type ListaInspeccion = {
-  id: number;
+  id: string;
   tipo: string; // tipo de equipo: cada tipo tiene una sola lista
   version: number; // el backend la sube en cada actualización
   secciones: Seccion[];
@@ -69,4 +73,6 @@ export type Sesion = {
   nombre: string;
   usuario: string;
   rol: string;
+  esAdmin: boolean; // rol Administrador o superusuario
+  debeCambiarClave: boolean; // tiene una contraseña temporal
 };

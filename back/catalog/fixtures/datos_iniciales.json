@@ -1,0 +1,1038 @@
+{
+ "equipment_types": [
+  {
+   "name": "Cargadores",
+   "description": "Cargadores Caterpillar y SEM-CAT"
+  },
+  {
+   "name": "Volquetas",
+   "description": "Volquetas de fabricación propia y Foton Auman 8x4"
+  },
+  {
+   "name": "Compresores / Wagon drill",
+   "description": "Compresores Kaishan y Atlas Copco"
+  }
+ ],
+ "equipments": [
+  {
+   "identifier": "CAR-1",
+   "equipment_type": "Cargadores",
+   "model": "Caterpillar 966C",
+   "serial_number": "18B01190",
+   "year": 1990,
+   "hour_meter": "6509",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-2",
+   "equipment_type": "Cargadores",
+   "model": "Caterpillar 960F",
+   "serial_number": "9ZJ00219",
+   "year": 1995,
+   "hour_meter": "648",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-3",
+   "equipment_type": "Cargadores",
+   "model": "Caterpillar 950H",
+   "serial_number": "0950HVM1G00856",
+   "year": 2007,
+   "hour_meter": "30189",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-4",
+   "equipment_type": "Cargadores",
+   "model": "Caterpillar 950H",
+   "serial_number": "0950HLM1G00861",
+   "year": 2007,
+   "hour_meter": "30590",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-5",
+   "equipment_type": "Cargadores",
+   "model": "Caterpillar 950H",
+   "serial_number": "0950HPJX00446",
+   "year": 2014,
+   "hour_meter": "19394",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-6",
+   "equipment_type": "Cargadores",
+   "model": "SEM-CAT 659C",
+   "serial_number": "A1408005AH1408001",
+   "year": 2014,
+   "hour_meter": "9931",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-7",
+   "equipment_type": "Cargadores",
+   "model": "SEM-CAT 669C",
+   "serial_number": "SEM00669AS6J00582",
+   "year": 2017,
+   "hour_meter": "9750",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-8",
+   "equipment_type": "Cargadores",
+   "model": "SEM-CAT 669C",
+   "serial_number": "SEM00669ES6J00535",
+   "year": 2019,
+   "hour_meter": "SM/SS",
+   "status": "usable"
+  },
+  {
+   "identifier": "CAR-9",
+   "equipment_type": "Cargadores",
+   "model": "SEM-CAT 668D",
+   "serial_number": "SEM00668HS6800271",
+   "year": 2024,
+   "hour_meter": "2892",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-35",
+   "equipment_type": "Volquetas",
+   "model": "Fabricación propia",
+   "serial_number": "Fab. propia",
+   "year": null,
+   "hour_meter": "2831",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-36",
+   "equipment_type": "Volquetas",
+   "model": "Fabricación propia",
+   "serial_number": "Fab. propia",
+   "year": null,
+   "hour_meter": "4038",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-41",
+   "equipment_type": "Volquetas",
+   "model": "Fabricación propia",
+   "serial_number": "Fab. propia",
+   "year": null,
+   "hour_meter": "6255",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-42",
+   "equipment_type": "Volquetas",
+   "model": "Fabricación propia",
+   "serial_number": "Fab. propia",
+   "year": null,
+   "hour_meter": "4397",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-43",
+   "equipment_type": "Volquetas",
+   "model": "Fabricación propia",
+   "serial_number": "Fab. propia",
+   "year": null,
+   "hour_meter": "2173",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-45",
+   "equipment_type": "Volquetas",
+   "model": "Fabricación propia",
+   "serial_number": "Fab. propia",
+   "year": null,
+   "hour_meter": "3226",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-46",
+   "equipment_type": "Volquetas",
+   "model": "Fabricación propia",
+   "serial_number": "Fab. propia",
+   "year": null,
+   "hour_meter": "1756",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-50",
+   "equipment_type": "Volquetas",
+   "model": "Foton Auman 8x4",
+   "serial_number": "Pendiente",
+   "year": null,
+   "hour_meter": "5640",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-51",
+   "equipment_type": "Volquetas",
+   "model": "Foton Auman 8x4",
+   "serial_number": "Pendiente",
+   "year": null,
+   "hour_meter": "5481",
+   "status": "usable"
+  },
+  {
+   "identifier": "VOL-52",
+   "equipment_type": "Volquetas",
+   "model": "Foton Auman 8x4",
+   "serial_number": "Pendiente",
+   "year": null,
+   "hour_meter": "3357",
+   "status": "usable"
+  },
+  {
+   "identifier": "KAISHAN",
+   "equipment_type": "Compresores / Wagon drill",
+   "model": "Kaishan 10/12-LGCY",
+   "serial_number": "Pendiente",
+   "year": null,
+   "hour_meter": "1688",
+   "status": "usable"
+  },
+  {
+   "identifier": "XAS 750",
+   "equipment_type": "Compresores / Wagon drill",
+   "model": "Atlas Copco XAS750",
+   "serial_number": "Pendiente",
+   "year": null,
+   "hour_meter": "9242",
+   "status": "usable"
+  }
+ ],
+ "checklists": [
+  {
+   "equipment_type": "Cargadores",
+   "sections": [
+    {
+     "title": "Llantas",
+     "items": [
+      {
+       "text": "Desgaste",
+       "is_critical": false
+      },
+      {
+       "text": "Presión",
+       "is_critical": false
+      },
+      {
+       "text": "Pernos",
+       "is_critical": false
+      },
+      {
+       "text": "Rines",
+       "is_critical": false
+      },
+      {
+       "text": "Alineación",
+       "is_critical": false
+      },
+      {
+       "text": "Orugas",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Balde",
+     "items": [
+      {
+       "text": "Cilindros hidráulicos de levante",
+       "is_critical": false
+      },
+      {
+       "text": "Lámina",
+       "is_critical": false
+      },
+      {
+       "text": "Uñas",
+       "is_critical": false
+      },
+      {
+       "text": "Herramienta de desgaste",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Carrocería",
+     "items": [
+      {
+       "text": "Limpieza",
+       "is_critical": false
+      },
+      {
+       "text": "Deterioro",
+       "is_critical": false
+      },
+      {
+       "text": "Exosto",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Sistema hidráulico",
+     "items": [
+      {
+       "text": "Mangueras",
+       "is_critical": false
+      },
+      {
+       "text": "Acoples",
+       "is_critical": false
+      },
+      {
+       "text": "Cilindros",
+       "is_critical": false
+      },
+      {
+       "text": "Retenedores",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de aceite",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Motor",
+     "items": [
+      {
+       "text": "Filtro de aceite de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Combustible",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de aceite de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de aceite caja de transmisión",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de agua / refrigerante",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Batería",
+     "items": [
+      {
+       "text": "Bornes",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de agua",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Aire",
+     "items": [
+      {
+       "text": "Filtro aire de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Filtro aire acondicionado",
+       "is_critical": false
+      },
+      {
+       "text": "Mangueras - tuberías",
+       "is_critical": false
+      },
+      {
+       "text": "Conexiones",
+       "is_critical": false
+      },
+      {
+       "text": "Frenos",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Frenos",
+     "items": [
+      {
+       "text": "Nivel de líquido",
+       "is_critical": false
+      },
+      {
+       "text": "Freno de parqueo",
+       "is_critical": false
+      },
+      {
+       "text": "Pastillas",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Parabrisas",
+     "items": [
+      {
+       "text": "Vidrios",
+       "is_critical": false
+      },
+      {
+       "text": "Plumillas",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de agua",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Chasis",
+     "items": [
+      {
+       "text": "Fisuras",
+       "is_critical": false
+      },
+      {
+       "text": "Tornillos",
+       "is_critical": false
+      },
+      {
+       "text": "Puentes",
+       "is_critical": false
+      },
+      {
+       "text": "Vigas",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Cabina",
+     "items": [
+      {
+       "text": "Cojinería",
+       "is_critical": false
+      },
+      {
+       "text": "Aseo",
+       "is_critical": false
+      },
+      {
+       "text": "Bocina / alarma de reversa",
+       "is_critical": false
+      },
+      {
+       "text": "Aire acondicionado",
+       "is_critical": false
+      },
+      {
+       "text": "Puertas / manijas",
+       "is_critical": false
+      },
+      {
+       "text": "Volante / dirección",
+       "is_critical": false
+      },
+      {
+       "text": "Testigos tablero",
+       "is_critical": false
+      },
+      {
+       "text": "Cinturones de seguridad",
+       "is_critical": false
+      },
+      {
+       "text": "Palanca / caja de cambios",
+       "is_critical": false
+      },
+      {
+       "text": "Palanca mando de balde",
+       "is_critical": false
+      },
+      {
+       "text": "Retrovisores",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Indicadores en tablero",
+     "items": [
+      {
+       "text": "Presión aceite de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Presión de aire",
+       "is_critical": false
+      },
+      {
+       "text": "RPM",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de combustible",
+       "is_critical": false
+      },
+      {
+       "text": "Carga de batería",
+       "is_critical": false
+      },
+      {
+       "text": "Direccionales",
+       "is_critical": false
+      },
+      {
+       "text": "Temperatura",
+       "is_critical": false
+      },
+      {
+       "text": "Refrigerante motor",
+       "is_critical": false
+      },
+      {
+       "text": "Luces",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Luces",
+     "items": [
+      {
+       "text": "Altas",
+       "is_critical": false
+      },
+      {
+       "text": "Medias",
+       "is_critical": false
+      },
+      {
+       "text": "Bajas",
+       "is_critical": false
+      },
+      {
+       "text": "Direccionales",
+       "is_critical": false
+      },
+      {
+       "text": "Estacionarias",
+       "is_critical": false
+      },
+      {
+       "text": "Stop",
+       "is_critical": false
+      },
+      {
+       "text": "Reversa",
+       "is_critical": false
+      },
+      {
+       "text": "Exploradoras",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Equipo de emergencia",
+     "items": [
+      {
+       "text": "Botiquín",
+       "is_critical": false
+      },
+      {
+       "text": "Extintor vigente",
+       "is_critical": false
+      },
+      {
+       "text": "Conos / triángulos reflectivos",
+       "is_critical": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "equipment_type": "Volquetas",
+   "sections": [
+    {
+     "title": "Llantas",
+     "items": [
+      {
+       "text": "Desgaste",
+       "is_critical": false
+      },
+      {
+       "text": "Presión",
+       "is_critical": false
+      },
+      {
+       "text": "Pernos",
+       "is_critical": false
+      },
+      {
+       "text": "Rines",
+       "is_critical": false
+      },
+      {
+       "text": "Alineación",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Volco",
+     "items": [
+      {
+       "text": "Cilindro hidráulico de levante",
+       "is_critical": false
+      },
+      {
+       "text": "Lámina",
+       "is_critical": false
+      },
+      {
+       "text": "Estado general",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Transmisión",
+     "items": [
+      {
+       "text": "Espárragos",
+       "is_critical": false
+      },
+      {
+       "text": "Fugas",
+       "is_critical": false
+      },
+      {
+       "text": "Porta-martillos",
+       "is_critical": false
+      },
+      {
+       "text": "Tornillos soportes corbatines",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Carrocería",
+     "items": [
+      {
+       "text": "Limpieza",
+       "is_critical": false
+      },
+      {
+       "text": "Deterioro",
+       "is_critical": false
+      },
+      {
+       "text": "Exosto",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Sistema hidráulico",
+     "items": [
+      {
+       "text": "Mangueras",
+       "is_critical": false
+      },
+      {
+       "text": "Acoples",
+       "is_critical": false
+      },
+      {
+       "text": "Cilindros",
+       "is_critical": false
+      },
+      {
+       "text": "Retenedores",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de aceite",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Motor",
+     "items": [
+      {
+       "text": "Filtro de aceite de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Combustible",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de aceite de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de aceite caja de transmisión",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de agua / refrigerante",
+       "is_critical": false
+      },
+      {
+       "text": "Soportes",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Batería",
+     "items": [
+      {
+       "text": "Bornes",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de agua",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Aire",
+     "items": [
+      {
+       "text": "Filtro aire de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Mangueras - tuberías",
+       "is_critical": false
+      },
+      {
+       "text": "Conexiones",
+       "is_critical": false
+      },
+      {
+       "text": "Frenos",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Frenos",
+     "items": [
+      {
+       "text": "Campana",
+       "is_critical": false
+      },
+      {
+       "text": "Bandas",
+       "is_critical": false
+      },
+      {
+       "text": "Freno de emergencia",
+       "is_critical": false
+      },
+      {
+       "text": "Embrague / clutch",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Parabrisas",
+     "items": [
+      {
+       "text": "Vidrios",
+       "is_critical": false
+      },
+      {
+       "text": "Plumillas",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de agua",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Chasis",
+     "items": [
+      {
+       "text": "Fisuras",
+       "is_critical": false
+      },
+      {
+       "text": "Tornillos",
+       "is_critical": false
+      },
+      {
+       "text": "Puentes",
+       "is_critical": false
+      },
+      {
+       "text": "Vigas",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Cabina",
+     "items": [
+      {
+       "text": "Cojinería",
+       "is_critical": false
+      },
+      {
+       "text": "Aseo",
+       "is_critical": false
+      },
+      {
+       "text": "Bocina / alarma de reversa",
+       "is_critical": false
+      },
+      {
+       "text": "Volante / dirección",
+       "is_critical": false
+      },
+      {
+       "text": "Testigos tablero",
+       "is_critical": false
+      },
+      {
+       "text": "Cinturones de seguridad",
+       "is_critical": false
+      },
+      {
+       "text": "Palanca / caja de cambios",
+       "is_critical": false
+      },
+      {
+       "text": "Palanca mando volco",
+       "is_critical": false
+      },
+      {
+       "text": "Retrovisores",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Indicadores en tablero",
+     "items": [
+      {
+       "text": "Presión aceite de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Presión de aire",
+       "is_critical": false
+      },
+      {
+       "text": "RPM",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de combustible",
+       "is_critical": false
+      },
+      {
+       "text": "Temperatura",
+       "is_critical": false
+      },
+      {
+       "text": "Refrigerante motor",
+       "is_critical": false
+      },
+      {
+       "text": "Luces",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Luces",
+     "items": [
+      {
+       "text": "Altas",
+       "is_critical": false
+      },
+      {
+       "text": "Medias",
+       "is_critical": false
+      },
+      {
+       "text": "Bajas",
+       "is_critical": false
+      },
+      {
+       "text": "Direccionales",
+       "is_critical": false
+      },
+      {
+       "text": "Estacionarias",
+       "is_critical": false
+      },
+      {
+       "text": "Stop",
+       "is_critical": false
+      },
+      {
+       "text": "Reversa",
+       "is_critical": false
+      },
+      {
+       "text": "Exploradoras",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Equipo de emergencia",
+     "items": [
+      {
+       "text": "Botiquín",
+       "is_critical": false
+      },
+      {
+       "text": "Extintor vigente",
+       "is_critical": false
+      },
+      {
+       "text": "Conos / triángulos reflectivos",
+       "is_critical": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "equipment_type": "Compresores / Wagon drill",
+   "sections": [
+    {
+     "title": "Motor",
+     "items": [
+      {
+       "text": "Nivel de aceite unidad",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de refrigerante",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de aceite motor",
+       "is_critical": false
+      },
+      {
+       "text": "Batería",
+       "is_critical": false
+      },
+      {
+       "text": "Bornes",
+       "is_critical": false
+      },
+      {
+       "text": "Manguera filtro",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Chasis",
+     "items": [
+      {
+       "text": "Fisuras",
+       "is_critical": false
+      },
+      {
+       "text": "Tornillos",
+       "is_critical": false
+      },
+      {
+       "text": "Puentes",
+       "is_critical": false
+      },
+      {
+       "text": "Vigas",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Aire",
+     "items": [
+      {
+       "text": "Filtro aire de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Filtro aire unidad",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Indicadores en tablero",
+     "items": [
+      {
+       "text": "Presión aceite de motor",
+       "is_critical": false
+      },
+      {
+       "text": "Presión de aire",
+       "is_critical": false
+      },
+      {
+       "text": "RPM",
+       "is_critical": false
+      },
+      {
+       "text": "Nivel de combustible",
+       "is_critical": false
+      },
+      {
+       "text": "Carga de batería",
+       "is_critical": false
+      },
+      {
+       "text": "Temperatura",
+       "is_critical": false
+      },
+      {
+       "text": "Refrigerante motor",
+       "is_critical": false
+      }
+     ]
+    },
+    {
+     "title": "Equipo de emergencia",
+     "items": [
+      {
+       "text": "Extintor vigente",
+       "is_critical": false
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

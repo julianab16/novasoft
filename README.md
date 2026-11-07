@@ -31,7 +31,8 @@ source .venv/bin/activate        # En Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 cp .env.example .env             # Configurar PostgreSQL y DJANGO_SECRET_KEY
 python manage.py migrate
-python manage.py createsuperuser
+python manage.py cargar_datos_iniciales   # Tipos, equipos y listas del cliente
+python manage.py createsuperuser          # Pide usuario, cédula y nombre; queda como Administrador
 python manage.py runserver
 ```
 
@@ -45,9 +46,11 @@ Necesita Node.js 18+.
 ```bash
 cd front
 npm install
-cp .env.example .env             # VITE_API_URL=http://localhost:8000 para usar el backend
+cp .env.example .env             # Ya trae VITE_API_URL=http://localhost:8000
 npm run dev
 ```
 
-Se abre en `http://localhost:5173`. Si `VITE_API_URL` se deja vacía, el front
-funciona con datos de prueba (ver [front/README.md](front/README.md)).
+Se abre en `http://localhost:5173` y se entra con el superusuario (usuario o
+cédula). El backend permite peticiones desde ese origen (CORS) por defecto.
+Si `VITE_API_URL` se deja vacía, el front funciona con datos de prueba (ver
+[front/README.md](front/README.md)).

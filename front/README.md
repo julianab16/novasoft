@@ -16,14 +16,14 @@ Se necesita Node.js 18 o superior.
 
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
 
 Se abre en `http://localhost:5173`.
 
-Mientras no haya backend, el front funciona con **datos de prueba** (los tipos, equipos y listas del Excel del cliente).
-Para entrar: usuario `pgomez`, contraseña `Sigope2025`.
-Los cambios se pierden al recargar la página.
+- Con `VITE_API_URL=http://localhost:8000` (valor de `.env.example`) usa el **backend real** (ver `../back/README.md`). Se entra con el superusuario creado con `createsuperuser` (usuario o cédula).
+- Con `VITE_API_URL` **vacía** funciona con **datos de prueba** en memoria (los tipos, equipos y listas del Excel del cliente). Para entrar: usuario `pgomez`, contraseña `Sigope2025`. Los cambios se pierden al recargar la página.
 
 ## Estructura
 
@@ -34,12 +34,13 @@ src/
 ├── components/ui.tsx       Componentes y estilos compartidos
 ├── pages/                  Una vista por archivo
 │   ├── Login.tsx
+│   ├── CambiarClave.tsx    Cambio obligatorio de la contraseña temporal
 │   ├── UsuariosRoles.tsx
 │   ├── EquiposTipos.tsx
 │   ├── ListasInspeccion.tsx
 │   └── AccesoDenegado.tsx
 └── services/
-    ├── api.ts              ← Única puerta al backend (endpoints)
+    ├── api.ts              ← Única puerta al backend (endpoints y traducción de campos)
     ├── mockApi.ts          Backend simulado (se usa si no hay VITE_API_URL)
     ├── mockData.ts         Datos de prueba
     └── ApiError.ts         Error que devuelve el backend
@@ -47,72 +48,57 @@ src/
 
 Las vistas **nunca** llaman a `fetch` directamente: todo pasa por `api.*` en `services/api.ts`.
 
-## Cómo conectarlo con el backend
+## Cómo se conecta con el backend
 
-1. Copiar `.env.example` como `.env` y poner la URL del backend:
+`services/api.ts` es la única puerta al backend. El backend usa nombres en inglés (`full_name`, `identifier`…) y `api.ts` los traduce a los del front (`nombre`, `codigo`…) en ambos sentidos, **incluidos los errores por campo**: si el backend responde `{"error": {"document": ["Ya existe…"]}}`, la vista recibe el error en `documento` y lo muestra debajo del campo.
 
-   ```
-   VITE_API_URL=http://localhost:8000
-   VITE_SESION_MINUTOS=15
-   ```
+También se encarga de:
 
-2. Al tener `VITE_API_URL`, el front deja de usar los datos de prueba y llama a los endpoints de abajo.
-3. Si el backend usa otras rutas o nombres de campos, se cambian **solo** en `services/api.ts` y `types.ts`.
-4. El backend debe permitir CORS desde la URL del front (en Django: `django-cors-headers`).
+- Guardar el access y el refresh token del login y renovar el access token solo cuando vence.
+- Volver al login si el backend rechaza la sesión y no se puede renovar.
+- Invalidar el refresh token al cerrar sesión.
 
-### Endpoints que espera el front
+### Endpoints que usa
 
 Todas las rutas van bajo `{VITE_API_URL}/api`. Las peticiones envían `Authorization: Bearer <token>`.
 
-| Acción | Método y ruta | Envía | Responde |
-|---|---|---|---|
-| Iniciar sesión | `POST /auth/login/` | `{ usuario, clave }` | `{ token, nombre, usuario, rol }` |
-| Cerrar sesión | `POST /accounts/logout/` | — | — |
-| Listar usuarios | `GET /accounts/users/` | — | `Usuario[]` |
-| Crear usuario | `POST /accounts/users/` | `Usuario` sin `id` | `Usuario` |
-| Editar / activar / desactivar | `PATCH /accounts/users/{id}/` | campos a cambiar | `Usuario` |
-| Restablecer contraseña | `POST /accounts/users/{id}/reset-password/` (pendiente en el back) | — | — |
-| Listar roles | `GET /accounts/roles/` (pendiente en el back) | — | `Rol[]` |
-| Crear rol | `POST /accounts/roles/` (pendiente en el back) | `{ nombre, solo_consulta }` | `Rol` |
-| Guardar permisos | `PUT /accounts/roles/{id}/permissions/` (pendiente en el back) | `{ "Inspecciones": "Solo ver", … }` | `Rol` |
-| Listar tipos | `GET /catalog/equipment-types/` | — | `TipoEquipo[]` |
-| Crear tipo | `POST /catalog/equipment-types/` | `{ nombre, descripcion, activo }` | `TipoEquipo` |
-| Editar / activar tipo | `PATCH /catalog/equipment-types/{id}/` | campos a cambiar | `TipoEquipo` |
-| Eliminar tipo | `DELETE /catalog/equipment-types/{id}/` | — | `204` |
-| Listar equipos | `GET /catalog/equipments/` | — | `Equipo[]` |
-| Registrar equipo | `POST /catalog/equipments/` | `Equipo` sin `id` ni `modificado` | `Equipo` |
-| Editar equipo | `PATCH /catalog/equipments/{id}/` | campos a cambiar | `Equipo` |
-| Listar listas | `GET /catalog/checklists/` | — | `ListaInspeccion[]` |
-| Crear lista | `POST /catalog/checklists/` | `{ tipo }` | `ListaInspeccion` |
-| Actualizar lista | `PUT /catalog/checklists/{id}/` | `{ secciones }` | `ListaInspeccion` |
+| Acción | Método y ruta |
+|---|---|
+| Iniciar sesión (usuario o cédula) | `POST /auth/login/` |
+| Renovar token | `POST /auth/refresh/` |
+| Cerrar sesión | `POST /accounts/logout/` |
+| Cambiar la contraseña temporal | `POST /accounts/me/change-password/` |
+| Listar / crear usuarios | `GET`, `POST /accounts/users/` |
+| Editar / activar / desactivar usuario | `PATCH /accounts/users/{id}/` |
+| Restablecer contraseña | `POST /accounts/users/{id}/reset-password/` |
+| Listar / crear roles | `GET`, `POST /accounts/roles/` |
+| Guardar permisos de un rol | `PUT /accounts/roles/{id}/permissions/` |
+| Listar / crear tipos | `GET`, `POST /catalog/equipment-types/` |
+| Editar / activar / eliminar tipo | `PATCH`, `DELETE /catalog/equipment-types/{id}/` |
+| Listar / registrar equipos | `GET`, `POST /catalog/equipments/` |
+| Editar equipo | `PATCH /catalog/equipments/{codigo}/` |
+| Listar / crear listas | `GET`, `POST /catalog/checklists/` |
+| Actualizar lista (nueva versión) | `PATCH /catalog/checklists/{id}/` |
 
-La forma de cada objeto está en `src/types.ts`.
+El detalle de cada endpoint está en `../back/README.md` y en Swagger (`http://localhost:8000/api/docs/`).
 
-### Reglas que debe validar el backend
+### Reglas que valida el backend
 
-El front ya las valida, pero el backend debe hacerlo también:
+El front también las valida, pero la fuente de verdad es el backend:
 
 - No se repiten el **documento** ni el **usuario** de un usuario.
-- No se repite el **código o placa** de un equipo.
-- No se repite el **nombre** de un tipo de equipo.
+- No se repite el **código** ni la **placa** de un equipo, y el código no se puede cambiar.
+- No se repite el **nombre** de un tipo de equipo ni de un rol.
 - No se puede **eliminar** un tipo que tenga equipos.
 - Cada tipo de equipo tiene **una sola** lista de inspección.
 - Al **actualizar una lista** se crea una versión nueva; las inspecciones anteriores conservan la versión que respondieron.
-- Un usuario desactivado no puede iniciar sesión y conserva su historial.
-- El campo `modificado` de un equipo (usuario y fecha) lo llena el backend.
+- Un usuario desactivado no puede iniciar sesión y conserva su historial. Nadie puede desactivarse a sí mismo.
+- El campo `modificado` de un equipo (usuario y fecha) lo llena el backend a partir del historial.
 - El login responde con un mensaje genérico si falla (no dice si fue el usuario o la contraseña).
-
-### Errores
-
-Si algo falla, el backend debe responder con el formato de Django REST Framework, por ejemplo:
-
-```json
-{ "documento": ["Ya existe un usuario con este documento."] }
-```
-
-El front muestra ese mensaje debajo del campo correspondiente.
+- Al crear un usuario o restablecer su contraseña, el backend genera una **contraseña temporal** que se muestra una sola vez al administrador; el usuario debe cambiarla en su primer ingreso.
+- Los permisos del **Administrador** no se pueden cambiar: siempre tiene acceso total.
 
 ## Pendiente fuera de este front
 
 - La app del operario (check-in, checklist, novedades) y los paneles de SST y Taller.
-- Los permisos por rol se guardan aquí, pero cada pantalla debe revisarlos según el rol que devuelva el login. Por ahora este front solo deja entrar al rol **Administrador**; los demás ven "Acceso denegado".
+- El backend ya aplica los permisos por módulo de cada rol (el login los devuelve en `user.permissions`). Por ahora este front solo deja entrar al **Administrador**; los demás roles ven "Acceso denegado" hasta que existan sus pantallas.

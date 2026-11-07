@@ -1,7 +1,7 @@
 // Equipos y tipos: inventario de la flota y tipos de equipo.
 import { useEffect, useState } from "react";
-import { Cargando, Drawer, Field, Icon, Status, Tabs, Toast, btnGhost, btnPrimary, card, input, td, textoError, th, type Aviso, type Tone } from "../components/ui";
-import { ApiError, api } from "../services/api";
+import { Cargando, Drawer, Field, Icon, Status, Tabs, Toast, btnGhost, btnPrimary, card, erroresDeFormulario, input, td, textoError, th, type Aviso, type Tone } from "../components/ui";
+import { api } from "../services/api";
 import { ESTADOS_EQUIPO, type Equipo, type EstadoEquipo, type ListaInspeccion, type TipoEquipo } from "../types";
 
 const tonoEstado: Record<EstadoEquipo, Tone> = { Disponible: "ok", "En mantenimiento": "warn", "Fuera de servicio": "danger" };
@@ -12,8 +12,10 @@ export default function EquiposTipos() {
   const [tipos, setTipos] = useState<TipoEquipo[] | null>(null);
   const [equipos, setEquipos] = useState<Equipo[] | null>(null);
   const [listas, setListas] = useState<ListaInspeccion[]>([]);
+  const [error, setError] = useState("");
   const recargar = () => Promise.all([api.tipos.listar(), api.equipos.listar(), api.listas.listar()]).then(([t, e, l]) => { setTipos(t); setEquipos(e); setListas(l); });
-  useEffect(() => { recargar(); }, []);
+  useEffect(() => { recargar().catch((e) => setError(textoError(e))); }, []);
+  if (error) return <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p>;
   return <>
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-black sm:text-2xl">Equipos y tipos</h2><p className="mt-1 text-sm text-slate-500">Mantén actualizado el inventario de la flota.</p></div><Tabs tabs={["Equipos", "Tipos de equipo"]} value={tab} onChange={setTab} /></div>
     {!tipos || !equipos ? <Cargando /> : tab === "Equipos" ? <Equipos equipos={equipos} setEquipos={setEquipos} tipos={tipos} /> : <Tipos tipos={tipos} equipos={equipos} listas={listas} recargar={recargar} />}
@@ -24,22 +26,22 @@ type DatosEquipo = Omit<Equipo, "id" | "modificado">;
 
 function Equipos({ equipos, setEquipos, tipos }: { equipos: Equipo[]; setEquipos: (e: Equipo[]) => void; tipos: TipoEquipo[] }) {
   const [filtro, setFiltro] = useState("Todos"); const [q, setQ] = useState("");
-  const [form, setForm] = useState<{ id?: number; modificado?: string; data: DatosEquipo } | null>(null);
+  const [form, setForm] = useState<{ id?: string; modificado?: string; data: DatosEquipo } | null>(null);
   const [error, setError] = useState<Record<string, string>>({});
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState<Aviso>(null);
   const activos = tipos.filter((t) => t.activo);
-  const vistos = equipos.filter((e) => (filtro === "Todos" || e.tipo === filtro) && `${e.codigo} ${e.marca}`.toLowerCase().includes(q.toLowerCase()));
+  const vistos = equipos.filter((e) => (filtro === "Todos" || e.tipo === filtro) && `${e.codigo} ${e.placa} ${e.marca} ${e.serie}`.toLowerCase().includes(q.toLowerCase()));
 
   const abrir = (e?: Equipo) => {
     setError({});
     if (e) { const { id, modificado, ...data } = e; setForm({ id, modificado, data }); }
-    else setForm({ data: { codigo: "", tipo: activos[0]?.nombre ?? "", marca: "", serie: "", anio: "", horometro: "", estado: "Disponible" } });
+    else setForm({ data: { codigo: "", placa: "", tipo: activos[0]?.nombre ?? "", marca: "", serie: "", anio: "", horometro: "", estado: "Disponible" } });
   };
   const set = (k: keyof DatosEquipo, v: string) => form && setForm({ ...form, data: { ...form.data, [k]: v } });
   const guardar = async () => {
     if (!form) return; const d = { ...form.data, codigo: form.data.codigo.trim().toUpperCase() }; const e: Record<string, string> = {};
-    if (!d.codigo) e.codigo = "Escribe el código o la placa.";
+    if (!d.codigo) e.codigo = "Escribe el código del equipo.";
     if (!d.marca.trim()) e.marca = "Escribe la marca o el modelo.";
     if (!d.tipo) e.tipo = "Elige el tipo de equipo.";
     setError(e); if (Object.keys(e).length) return;
@@ -49,8 +51,8 @@ function Equipos({ equipos, setEquipos, tipos }: { equipos: Equipo[]; setEquipos
       setEquipos(form.id ? equipos.map((y) => (y.id === x.id ? x : y)) : [x, ...equipos]);
       setAviso({ texto: form.id ? "Cambios guardados" : "Equipo registrado" }); setForm(null);
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.campos).length) setError(Object.fromEntries(Object.entries(err.campos).map(([k, v]) => [k, v[0]])));
-      else setAviso({ texto: textoError(err), error: true });
+      const { campos, resto } = erroresDeFormulario(err, ["codigo", "placa", "tipo", "marca", "anio", "horometro"]);
+      setError(campos); if (resto) setAviso({ texto: resto, error: true });
     } finally { setGuardando(false); }
   };
 
@@ -64,13 +66,13 @@ function Equipos({ equipos, setEquipos, tipos }: { equipos: Equipo[]; setEquipos
       </div>
       <ul className="divide-y divide-slate-100 border-t border-slate-100 lg:hidden">{vistos.map((e) => <li key={e.id}><button onClick={() => abrir(e)} className="flex w-full items-start gap-3 p-4 text-left">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#F5B800]/15 text-[#8A6500]"><Icon name="equipment" size={19} /></span>
-        <span className="min-w-0 flex-1"><span className="block font-black">{e.codigo}</span><span className="mt-0.5 block text-sm font-semibold text-slate-500">{e.tipo} · {e.marca}</span>{e.horometro && <span className="block text-xs font-bold text-slate-500">Horómetro: {horas(e.horometro)}</span>}<span className="mt-2 block"><Status type={tonoEstado[e.estado]}>{e.estado}</Status></span><span className="mt-2 block text-xs font-semibold text-slate-400">{e.modificado}</span></span>
+        <span className="min-w-0 flex-1"><span className="block font-black">{e.codigo}</span><span className="mt-0.5 block text-sm font-semibold text-slate-500">{e.tipo} · {e.marca}{e.placa && ` · Placa ${e.placa}`}</span>{e.horometro && <span className="block text-xs font-bold text-slate-500">Horómetro: {horas(e.horometro)}</span>}<span className="mt-2 block"><Status type={tonoEstado[e.estado]}>{e.estado}</Status></span><span className="mt-2 block text-xs font-semibold text-slate-400">{e.modificado}</span></span>
         <span className="text-sm font-black text-[#8A6500]">Editar</span>
       </button></li>)}</ul>
       <table className="hidden w-full border-t border-slate-100 lg:table">
         <thead className="bg-slate-50"><tr><th className={th}>Código / placa</th><th className={th}>Tipo</th><th className={th}>Marca / modelo</th><th className={th}>Horómetro</th><th className={th}>Estado</th><th className={th}>Última modificación</th><th className={th} /></tr></thead>
         <tbody>{vistos.map((e) => <tr key={e.id} className="border-t border-slate-100">
-          <td className={td}><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-[#F5B800]/15 text-[#8A6500]"><Icon name="equipment" size={18} /></span><span className="font-black">{e.codigo}</span></div></td>
+          <td className={td}><div className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-xl bg-[#F5B800]/15 text-[#8A6500]"><Icon name="equipment" size={18} /></span><span><span className="block font-black">{e.codigo}</span>{e.placa && <span className="block text-xs font-semibold text-slate-400">Placa {e.placa}</span>}</span></div></td>
           <td className={`${td} font-bold`}>{e.tipo}</td><td className={`${td} font-semibold text-slate-600`}>{e.marca}{e.anio && <span className="block text-xs text-slate-400">Año {e.anio}</span>}</td><td className={`${td} font-bold`}>{horas(e.horometro)}</td>
           <td className={td}><Status type={tonoEstado[e.estado]}>{e.estado}</Status></td>
           <td className={`${td} text-xs font-semibold text-slate-400`}>{e.modificado}</td>
@@ -78,12 +80,15 @@ function Equipos({ equipos, setEquipos, tipos }: { equipos: Equipo[]; setEquipos
       </table>
       {vistos.length === 0 && <p className="p-10 text-center text-sm font-semibold text-slate-400">No hay equipos que coincidan con la búsqueda.</p>}
     </article>
-    {form && <Drawer title={form.id ? `Editar ${form.data.codigo}` : "Registrar equipo"} subtitle="El código o la placa no se puede repetir." onClose={() => setForm(null)} footer={<><button className={`${btnGhost} flex-1`} onClick={() => setForm(null)}>Cancelar</button><button disabled={guardando} className={`${btnPrimary} flex-1`} onClick={guardar}><Icon name="check" size={19} />{guardando ? "Guardando..." : "Guardar"}</button></>}>
-      <Field label="Código o placa *" error={error.codigo}><input className={`${input} w-full uppercase ${error.codigo ? "border-red-500" : "border-slate-200"}`} value={form.data.codigo} onChange={(e) => set("codigo", e.target.value)} placeholder="Ej. CAR-10 o VOL-53" /></Field>
+    {form && <Drawer title={form.id ? `Editar ${form.data.codigo}` : "Registrar equipo"} subtitle={form.id ? "El código identifica al equipo y no se puede cambiar." : "El código y la placa no se pueden repetir."} onClose={() => setForm(null)} footer={<><button className={`${btnGhost} flex-1`} onClick={() => setForm(null)}>Cancelar</button><button disabled={guardando} className={`${btnPrimary} flex-1`} onClick={guardar}><Icon name="check" size={19} />{guardando ? "Guardando..." : "Guardar"}</button></>}>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Código *" error={error.codigo}><input disabled={!!form.id} className={`${input} w-full uppercase disabled:bg-slate-100 disabled:text-slate-500 ${error.codigo ? "border-red-500" : "border-slate-200"}`} value={form.data.codigo} onChange={(e) => set("codigo", e.target.value)} placeholder="Ej. CAR-10" /></Field>
+        <Field label="Placa" error={error.placa}><input className={`${input} w-full uppercase ${error.placa ? "border-red-500" : "border-slate-200"}`} value={form.data.placa} onChange={(e) => set("placa", e.target.value)} placeholder="Opcional" /></Field>
+      </div>
       <Field label="Tipo de equipo *" error={error.tipo}><select className={`${input} w-full border-slate-200`} value={form.data.tipo} onChange={(e) => set("tipo", e.target.value)}>{activos.map((t) => <option key={t.id}>{t.nombre}</option>)}</select></Field>
       <Field label="Marca / modelo *" error={error.marca}><input className={`${input} w-full ${error.marca ? "border-red-500" : "border-slate-200"}`} value={form.data.marca} onChange={(e) => set("marca", e.target.value)} placeholder="Ej. Caterpillar 950H" /></Field>
-      <div className="grid grid-cols-2 gap-3"><Field label="No. de serie"><input className={`${input} w-full border-slate-200`} value={form.data.serie} onChange={(e) => set("serie", e.target.value)} placeholder="Opcional" /></Field><Field label="Año"><input className={`${input} w-full border-slate-200`} value={form.data.anio} inputMode="numeric" onChange={(e) => set("anio", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Ej. 2014" /></Field></div>
-      <Field label="Horómetro actual"><span className="relative block"><input className={`${input} w-full border-slate-200 pr-12`} value={form.data.horometro} inputMode="numeric" onChange={(e) => set("horometro", e.target.value)} placeholder="Horas" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">h</span></span></Field>
+      <div className="grid grid-cols-2 gap-3"><Field label="No. de serie"><input className={`${input} w-full border-slate-200`} value={form.data.serie} onChange={(e) => set("serie", e.target.value)} placeholder="Opcional" /></Field><Field label="Año" error={error.anio}><input className={`${input} w-full border-slate-200`} value={form.data.anio} inputMode="numeric" onChange={(e) => set("anio", e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="Ej. 2014" /></Field></div>
+      <Field label="Horómetro actual" error={error.horometro}><span className="relative block"><input className={`${input} w-full border-slate-200 pr-12`} value={form.data.horometro} inputMode="numeric" onChange={(e) => set("horometro", e.target.value)} placeholder="Horas" /><span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">h</span></span></Field>
       <Field label="Estado *"><div className="grid grid-cols-3 gap-2">{ESTADOS_EQUIPO.map((s) => <button key={s} onClick={() => set("estado", s)} className={`min-h-12 rounded-xl border-2 px-2 text-xs font-black ${form.data.estado === s ? "border-[#F5B800] bg-[#F5B800]/15 text-[#684C00]" : "border-slate-200 text-slate-600"}`}>{s}</button>)}</div></Field>
       {form.id && <div className="rounded-xl bg-slate-50 p-4 text-xs font-semibold text-slate-500"><p className="font-black text-slate-700">Última modificación</p><p className="mt-1">{form.modificado}</p><p className="mt-2">Al guardar se registrará tu usuario y la fecha.</p></div>}
     </Drawer>}

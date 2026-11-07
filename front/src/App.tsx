@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { Icon, Marca, type IconName } from "./components/ui";
 import AccesoDenegado from "./pages/AccesoDenegado";
+import CambiarClave from "./pages/CambiarClave";
 import EquiposTipos from "./pages/EquiposTipos";
 import ListasInspeccion from "./pages/ListasInspeccion";
 import Login from "./pages/Login";
 import UsuariosRoles from "./pages/UsuariosRoles";
-import { api } from "./services/api";
+import { alVencerSesion, api } from "./services/api";
 import type { Sesion } from "./types";
 
 const MINUTOS_INACTIVIDAD = Number(import.meta.env.VITE_SESION_MINUTOS) || 15;
@@ -27,6 +28,9 @@ export default function App() {
     setExpirada(porInactividad);
   };
 
+  // Si el backend rechaza el token y no se puede renovar, se vuelve al login
+  useEffect(() => alVencerSesion(() => { setSesion(null); setExpirada(true); }), []);
+
   // Cierra la sesión si no hay actividad durante MINUTOS_INACTIVIDAD
   useEffect(() => {
     if (!sesion) return;
@@ -39,8 +43,11 @@ export default function App() {
 
   if (!sesion) return <Login sesionExpirada={expirada} onLogin={(s) => { setSesion(s); setExpirada(false); }} />;
 
+  // Con una contraseña temporal, primero hay que cambiarla.
+  if (sesion.debeCambiarClave) return <CambiarClave sesion={sesion} onListo={() => setSesion({ ...sesion, debeCambiarClave: false })} onSalir={() => salir()} />;
+
   // Este front solo incluye las vistas del Administrador.
-  if (sesion.rol !== "Administrador") return <main className="min-h-screen bg-[#F5F6F7] p-6"><AccesoDenegado onVolver={() => salir()} textoBoton="Cerrar sesión" /></main>;
+  if (!sesion.esAdmin) return <main className="min-h-screen bg-[#F5F6F7] p-6"><AccesoDenegado onVolver={() => salir()} textoBoton="Cerrar sesión" /></main>;
 
   return <PanelAdmin sesion={sesion} onSalir={() => salir()} />;
 }

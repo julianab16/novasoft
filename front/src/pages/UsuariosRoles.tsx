@@ -1,13 +1,15 @@
 // Usuarios y roles: gestión de usuarios y permisos por rol.
 import { useEffect, useState } from "react";
-import { Cargando, Drawer, Field, Icon, Status, Switch, Tabs, Toast, btnGhost, btnPrimary, card, input, td, textoError, th, type Aviso } from "../components/ui";
-import { ApiError, api } from "../services/api";
+import { Cargando, ClaveTemporal, Drawer, Field, Icon, Status, Switch, Tabs, Toast, btnGhost, btnPrimary, card, erroresDeFormulario, input, td, textoError, th, type Aviso } from "../components/ui";
+import { api } from "../services/api";
 import { MODULOS, NIVELES, type Modulo, type Nivel, type Rol, type Usuario } from "../types";
 
 export default function UsuariosRoles() {
   const [tab, setTab] = useState("Usuarios");
   const [roles, setRoles] = useState<Rol[] | null>(null);
-  useEffect(() => { api.roles.listar().then(setRoles); }, []);
+  const [error, setError] = useState("");
+  useEffect(() => { api.roles.listar().then(setRoles).catch((e) => setError(textoError(e))); }, []);
+  if (error) return <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p>;
   return <>
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h2 className="text-xl font-black sm:text-2xl">Usuarios y roles</h2><p className="mt-1 text-sm text-slate-500">Controla quién usa SIGOPE y qué puede hacer cada perfil.</p></div><Tabs tabs={["Usuarios", "Roles y permisos"]} value={tab} onChange={setTab} /></div>
     {!roles ? <Cargando /> : tab === "Usuarios" ? <Usuarios roles={roles} /> : <Roles roles={roles} setRoles={setRoles} />}
@@ -23,6 +25,7 @@ function Usuarios({ roles }: { roles: Rol[] }) {
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [guardando, setGuardando] = useState(false);
   const [reset, setReset] = useState<Usuario | null>(null);
+  const [clave, setClave] = useState<{ usuario: string; clave: string } | null>(null);
   const [aviso, setAviso] = useState<Aviso>(null);
 
   useEffect(() => { api.usuarios.listar().then(setLista).catch((e) => setAviso({ texto: textoError(e), error: true })); }, []);
@@ -40,12 +43,18 @@ function Usuarios({ roles }: { roles: Rol[] }) {
     setErrores(e); if (Object.keys(e).length) return;
     setGuardando(true);
     try {
-      const u = form.id ? await api.usuarios.actualizar(form.id, d) : await api.usuarios.crear(d);
-      setLista(form.id ? lista.map((x) => (x.id === u.id ? u : x)) : [u, ...lista]);
+      if (form.id) {
+        const u = await api.usuarios.actualizar(form.id, d);
+        setLista(lista.map((x) => (x.id === u.id ? u : x)));
+      } else {
+        const { claveTemporal, ...u } = await api.usuarios.crear(d);
+        setLista([u, ...lista]);
+        if (claveTemporal) setClave({ usuario: u.nombre, clave: claveTemporal });
+      }
       setAviso({ texto: form.id ? "Cambios guardados" : "Usuario creado" }); setForm(null);
     } catch (err) {
-      if (err instanceof ApiError && Object.keys(err.campos).length) setErrores(Object.fromEntries(Object.entries(err.campos).map(([k, v]) => [k, v[0]])));
-      else setAviso({ texto: textoError(err), error: true });
+      const { campos, resto } = erroresDeFormulario(err, ["nombre", "documento", "usuario"]);
+      setErrores(campos); if (resto) setAviso({ texto: resto, error: true });
     } finally { setGuardando(false); }
   };
   const cambiarEstado = async (u: Usuario) => {
@@ -56,7 +65,7 @@ function Usuarios({ roles }: { roles: Rol[] }) {
     } catch (err) { setAviso({ texto: textoError(err), error: true }); }
   };
   const restablecer = async (u: Usuario) => {
-    try { await api.usuarios.restablecerClave(u.id); setAviso({ texto: `Contraseña restablecida para ${u.usuario}` }); }
+    try { setClave({ usuario: u.nombre, clave: await api.usuarios.restablecerClave(u.id) }); }
     catch (err) { setAviso({ texto: textoError(err), error: true }); }
     setReset(null);
   };
@@ -105,6 +114,7 @@ function Usuarios({ roles }: { roles: Rol[] }) {
       <p className="mt-2 text-sm leading-relaxed text-slate-500">Se generará una contraseña temporal para <strong className="text-slate-800">{reset.nombre}</strong>. Deberá cambiarla al ingresar.</p>
       <div className="mt-6 flex gap-3"><button className={`${btnGhost} flex-1`} onClick={() => setReset(null)}>Cancelar</button><button className={`${btnPrimary} flex-1`} onClick={() => restablecer(reset)}>Restablecer</button></div>
     </div></div>}
+    {clave && <ClaveTemporal usuario={clave.usuario} clave={clave.clave} onClose={() => setClave(null)} />}
     {aviso && <Toast text={aviso.texto} error={aviso.error} onClose={() => setAviso(null)} />}
   </>;
 }
@@ -121,6 +131,7 @@ function Roles({ roles, setRoles }: { roles: Rol[]; setRoles: (r: Rol[]) => void
   const [permisos, setPermisos] = useState(sel.permisos);
   const [nuevo, setNuevo] = useState<{ nombre: string; consulta: boolean } | null>(null);
   const [aviso, setAviso] = useState<Aviso>(null);
+  const esAdmin = sel.nombre === "Administrador"; // siempre tiene acceso total
   const cambios = JSON.stringify(permisos) !== JSON.stringify(sel.permisos);
 
   const elegir = (r: Rol) => { setSelId(r.id); setPermisos(r.permisos); };
@@ -141,16 +152,16 @@ function Roles({ roles, setRoles }: { roles: Rol[]; setRoles: (r: Rol[]) => void
       <button onClick={() => setNuevo({ nombre: "", consulta: true })} className="mt-3 h-11 w-full rounded-xl border border-dashed border-slate-300 text-sm font-bold text-slate-500">+ Nuevo rol</button>
     </article>
     <article className={`${card} min-w-0 overflow-hidden`}>
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><h3 className="text-lg font-black">Permisos de {sel.nombre}</h3><p className="mt-1 text-sm text-slate-500">Elige qué puede hacer este rol en cada módulo.</p></div><button disabled={!cambios} onClick={guardar} className={btnPrimary}><Icon name="check" size={19} />Guardar cambios</button></div>
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><h3 className="text-lg font-black">Permisos de {sel.nombre}</h3><p className="mt-1 text-sm text-slate-500">Elige qué puede hacer este rol en cada módulo.</p></div><button disabled={!cambios || esAdmin} onClick={guardar} className={btnPrimary}><Icon name="check" size={19} />Guardar cambios</button></div>
       <div className="mx-5 mb-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-xs font-semibold text-slate-600 sm:mx-6 sm:grid-cols-3">
         <p><strong className="text-slate-800">Sin acceso:</strong> no ve el módulo.</p>
         <p><strong className="text-blue-700">Solo ver:</strong> consulta, pero no cambia nada.</p>
         <p><strong className="text-emerald-700">Ver y gestionar:</strong> consulta, crea, edita y desactiva.</p>
       </div>
-      <div className="mx-5 mb-4 flex gap-3 rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-800 sm:mx-6"><Icon name="info" className="mt-0.5 shrink-0" /><p>Los cambios se aplican la próxima vez que el usuario inicie sesión.</p></div>
+      <div className="mx-5 mb-4 flex gap-3 rounded-xl bg-blue-50 p-4 text-sm font-semibold text-blue-800 sm:mx-6"><Icon name="info" className="mt-0.5 shrink-0" /><p>{esAdmin ? "El Administrador siempre tiene acceso total a todos los módulos; sus permisos no se pueden cambiar." : "Los cambios se aplican de inmediato en el sistema."}</p></div>
       <ul className="divide-y divide-slate-100 border-t border-slate-100">{MODULOS.map((m: Modulo) => <li key={m} className="flex flex-col gap-3 px-5 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
         <p className="text-sm font-black text-slate-800">{m}</p>
-        <div role="radiogroup" aria-label={m} className="grid grid-cols-3 gap-2 md:w-[420px]">{NIVELES.map((n) => { const on = permisos[m] === n; return <button key={n} role="radio" aria-checked={on} onClick={() => setPermisos({ ...permisos, [m]: n })} className={`flex h-11 items-center justify-center gap-1 rounded-xl border-2 px-1 text-[11px] font-black leading-tight sm:px-2 sm:text-xs ${on ? tono[n] : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>{on && <span className="hidden sm:inline-flex"><Icon name="check" size={14} /></span>}{n}</button>; })}</div>
+        <div role="radiogroup" aria-label={m} className="grid grid-cols-3 gap-2 md:w-[420px]">{NIVELES.map((n) => { const on = permisos[m] === n; return <button key={n} role="radio" aria-checked={on} disabled={esAdmin} onClick={() => setPermisos({ ...permisos, [m]: n })} className={`flex h-11 items-center justify-center gap-1 rounded-xl border-2 px-1 text-[11px] font-black leading-tight sm:px-2 sm:text-xs ${on ? tono[n] : "border-slate-200 text-slate-500 hover:border-slate-300"}`}>{on && <span className="hidden sm:inline-flex"><Icon name="check" size={14} /></span>}{n}</button>; })}</div>
       </li>)}</ul>
     </article>
     {nuevo && <Drawer title="Nuevo rol" subtitle="Crea un perfil adicional." onClose={() => setNuevo(null)} footer={<><button className={`${btnGhost} flex-1`} onClick={() => setNuevo(null)}>Cancelar</button><button disabled={!nuevo.nombre.trim()} className={`${btnPrimary} flex-1`} onClick={crear}>Crear rol</button></>}>

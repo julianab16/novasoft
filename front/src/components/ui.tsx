@@ -1,5 +1,5 @@
 // Componentes y estilos compartidos (mismo estilo del mockup de Figma: amarillo #F5B800, gris #2B2B2B).
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export type IconName = "plus" | "search" | "x" | "check" | "users" | "shield" | "equipment" | "clipboard" | "lock" | "key" | "edit" | "up" | "down" | "trash" | "warning" | "arrow" | "info" | "logout" | "menu";
 const paths: Record<IconName, JSX.Element> = {
@@ -69,6 +69,31 @@ export type Aviso = { texto: string; error?: boolean } | null;
 /** Convierte cualquier error en un texto para mostrar al usuario. */
 export function textoError(e: unknown) {
   return e instanceof Error ? e.message : "Ocurrió un error. Inténtalo de nuevo.";
+}
+
+/**
+ * Reparte los errores del backend: los de campos que tiene el formulario se muestran
+ * debajo de cada campo; el resto (por ejemplo "detail") se devuelve como un solo texto.
+ */
+export function erroresDeFormulario(e: unknown, camposDelFormulario: string[]): { campos: Record<string, string>; resto?: string } {
+  const todos = (e as { campos?: Record<string, string[]> })?.campos ?? {};
+  const campos: Record<string, string> = {}; const otros: string[] = [];
+  for (const [k, v] of Object.entries(todos)) (camposDelFormulario.includes(k) ? (campos[k] = v[0]) : otros.push(...v));
+  const resto = otros.length ? otros.join(" ") : Object.keys(campos).length ? undefined : textoError(e);
+  return { campos, resto };
+}
+
+/** Muestra una contraseña temporal para que el administrador la copie y se la entregue al usuario. */
+export function ClaveTemporal({ usuario, clave, onClose }: { usuario: string; clave: string; onClose: () => void }) {
+  const [copiada, setCopiada] = useState(false);
+  const copiar = () => navigator.clipboard?.writeText(clave).then(() => setCopiada(true)).catch(() => undefined);
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40"><div role="dialog" aria-modal="true" className="w-[calc(100%-2rem)] max-w-[420px] rounded-2xl bg-white p-6 shadow-2xl">
+    <span className="grid size-12 place-items-center rounded-xl bg-[#F5B800]/15 text-[#8A6500]"><Icon name="key" /></span>
+    <h2 className="mt-4 text-xl font-black">Contraseña temporal</h2>
+    <p className="mt-2 text-sm leading-relaxed text-slate-500">Entrégale esta contraseña a <strong className="text-slate-800">{usuario}</strong>. Deberá cambiarla al ingresar. No se volverá a mostrar.</p>
+    <div className="mt-4 flex items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-3"><code className="min-w-0 flex-1 select-all break-all text-lg font-black tracking-wider">{clave}</code><button onClick={copiar} className="h-10 shrink-0 rounded-lg px-3 text-xs font-black text-[#8A6500] hover:bg-[#F5B800]/15">{copiada ? "Copiada" : "Copiar"}</button></div>
+    <button className={`${btnPrimary} mt-6 w-full`} onClick={onClose}>Listo</button>
+  </div></div>;
 }
 
 export function Cargando() {

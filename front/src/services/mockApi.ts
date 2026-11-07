@@ -11,7 +11,8 @@ let sesionActual = "";
 const esperar = <T,>(valor: T): Promise<T> => new Promise((ok) => setTimeout(() => ok(structuredClone(valor)), 150));
 const siguienteId = (lista: { id: number }[]) => Math.max(0, ...lista.map((x) => x.id)) + 1;
 const hoy = () => new Date().toLocaleDateString("es-CO");
-const buscar = <T extends { id: number }>(lista: T[], id: number) => {
+const claveTemporal = () => Math.random().toString(36).slice(2, 12);
+const buscar = <T extends { id: number | string }>(lista: T[], id: T["id"]) => {
   const x = lista.find((y) => y.id === id);
   if (!x) throw new ApiError(404, { detail: ["No encontrado."] });
   return x;
@@ -23,10 +24,14 @@ export const mockApi: Api = {
       const u = db.usuarios.find((x) => x.usuario === usuario || x.documento === usuario);
       if (!u || !u.activo || clave !== datos.CLAVE_PRUEBA) throw new ApiError(401, { detail: ["Credenciales inválidas."] });
       sesionActual = u.nombre;
-      return esperar({ token: "token-de-prueba", nombre: u.nombre, usuario: u.usuario, rol: u.rol });
+      return esperar({ token: "token-de-prueba", nombre: u.nombre, usuario: u.usuario, rol: u.rol, esAdmin: u.rol === "Administrador", debeCambiarClave: false });
     },
     async logout() {
       sesionActual = "";
+    },
+    async cambiarClave(actual) {
+      if (actual !== datos.CLAVE_PRUEBA) throw new ApiError(400, { actual: ["La contraseña actual no es correcta."] });
+      await esperar(null);
     },
   },
 
@@ -37,7 +42,7 @@ export const mockApi: Api = {
       if (db.usuarios.some((u) => u.usuario === d.usuario)) throw new ApiError(400, { usuario: ["Este usuario ya está en uso."] });
       const nuevo = { ...d, id: siguienteId(db.usuarios) };
       db.usuarios.unshift(nuevo);
-      return esperar(nuevo);
+      return esperar({ ...nuevo, claveTemporal: claveTemporal() });
     },
     async actualizar(id, d) {
       if (d.documento && db.usuarios.some((u) => u.id !== id && u.documento === d.documento)) throw new ApiError(400, { documento: ["Ya existe un usuario con este documento."] });
@@ -46,7 +51,7 @@ export const mockApi: Api = {
     },
     async restablecerClave(id) {
       buscar(db.usuarios, id);
-      await esperar(null);
+      return esperar(claveTemporal());
     },
   },
 
@@ -98,12 +103,12 @@ export const mockApi: Api = {
     listar: async () => esperar(db.equipos),
     async crear(d) {
       if (db.equipos.some((e) => e.codigo.toUpperCase() === d.codigo.toUpperCase())) throw new ApiError(400, { codigo: ["Ya existe un equipo con este código o placa."] });
-      const nuevo = { ...d, id: siguienteId(db.equipos), modificado: `${sesionActual || "Administrador"} · ${hoy()}` };
+      const nuevo = { ...d, id: d.codigo.toUpperCase(), codigo: d.codigo.toUpperCase(), modificado: `${sesionActual || "Administrador"} · ${hoy()}` };
       db.equipos.unshift(nuevo);
       return esperar(nuevo);
     },
     async actualizar(id, d) {
-      if (d.codigo && db.equipos.some((e) => e.id !== id && e.codigo.toUpperCase() === d.codigo!.toUpperCase())) throw new ApiError(400, { codigo: ["Ya existe un equipo con este código o placa."] });
+      if (d.codigo && d.codigo.toUpperCase() !== id) throw new ApiError(400, { codigo: ["El código de un equipo no se puede cambiar."] });
       return esperar(Object.assign(buscar(db.equipos, id), d, { modificado: `${sesionActual || "Administrador"} · ${hoy()}` }));
     },
   },
@@ -112,7 +117,7 @@ export const mockApi: Api = {
     listar: async () => esperar(db.listas),
     async crear(tipo) {
       if (db.listas.some((l) => l.tipo === tipo)) throw new ApiError(400, { tipo: ["Este tipo de equipo ya tiene lista."] });
-      const nueva = { id: siguienteId(db.listas), tipo, version: 1, secciones: [{ titulo: "Sección 1", items: [{ texto: "" }] }] };
+      const nueva = { id: `CHK-${tipo.toUpperCase().replace(/[^A-Z0-9]+/g, "-")}`, tipo, version: 1, secciones: [{ titulo: "Sección 1", items: [{ texto: "" }] }] };
       db.listas.push(nueva);
       return esperar(nueva);
     },

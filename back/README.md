@@ -2,17 +2,19 @@
 
 Backend modular de SIGOPE para gestionar usuarios, equipos, tipos de equipo,
 listas de inspección e inspecciones. Esta implementación cubre el alcance
-concretado en HU-01 a HU-06 del documento recibido.
+concretado en HU-01 a HU-06 del documento recibido y el contrato que usa el
+front de administración (`../front`).
 
 ## Tecnologías
 
 - Python 3.12+
-- Django 5.1 y Django REST Framework
+- Django 5.2 y Django REST Framework
 - PostgreSQL
-- JWT con SimpleJWT
-- Grupos/permisos de Django y control de roles de negocio
+- JWT con SimpleJWT (con lista negra de refresh tokens al cerrar sesión)
+- Roles con permisos por módulo
 - django-simple-history
 - drf-spectacular (OpenAPI/Swagger)
+- django-cors-headers (para que el front pueda llamar a la API)
 
 ## Puesta en marcha
 
@@ -26,61 +28,58 @@ pip install -r requirements.txt
 cp .env.example .env
 # Editar .env con las credenciales reales de PostgreSQL
 python manage.py migrate
+python manage.py cargar_datos_iniciales   # tipos, equipos y listas del cliente (opcional)
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Al ejecutar `createsuperuser`, registra el username y la contraseña que
-usarás en el login. El superusuario puede acceder a las operaciones
-administrativas. Para asignarle también el rol de negocio
-`administrador`, abre el shell de Django:
+`migrate` crea los roles base (Operario, Jefe de Taller, SST, Administrador y
+Solo consulta). `createsuperuser` pide usuario, cédula, nombre completo y
+contraseña, y deja al superusuario con el rol **Administrador**; con ese
+usuario (o su cédula) se entra al front.
 
-```bash
-python manage.py shell
-```
+`cargar_datos_iniciales` carga los 3 tipos de equipo, 21 equipos y 3 listas de
+inspección del Excel "CONTROL PREOPERACIONAL EQUIPOS MÓVILES - TCHO"
+(`catalog/fixtures/datos_iniciales.json`). Se puede ejecutar varias veces: no
+duplica lo que ya existe.
 
-```python
-from accounts.models import User
+Variables de `.env`:
 
-list(User.objects.values_list("username", flat=True))
-usuario = User.objects.get(username="EL_USERNAME_REGISTRADO")
-usuario.full_name = "Administrador Principal"
-usuario.document = "999999999"
-usuario.role = User.Role.ADMINISTRADOR
-usuario.save()
-```
+| Variable | Uso |
+| --- | --- |
+| `DJANGO_SECRET_KEY` | Clave secreta. Nunca uses el valor de ejemplo en producción. |
+| `DJANGO_DEBUG` | `True` solo en desarrollo. |
+| `DJANGO_ALLOWED_HOSTS` | Hosts permitidos, separados por coma. |
+| `POSTGRES_*` o `DATABASE_URL` | Conexión a la base de datos. |
+| `JWT_ACCESS_MINUTES`, `JWT_REFRESH_DAYS` | Duración de los tokens. |
+| `CORS_ALLOWED_ORIGINS` | URLs del front que pueden llamar a la API (por defecto `http://localhost:5173`). |
 
-Obtén el token para probar la API:
+## Autenticación y permisos
 
-```http
-POST http://localhost:8000/api/auth/login/
-Content-Type: application/json
-```
+Obtén tokens en `POST /api/auth/login/` con el usuario **o la cédula** y la
+contraseña. Usa el token recibido en `Authorization: Bearer <access>`. El
+access token expira según `JWT_ACCESS_MINUTES`; se renueva con el refresh en
+`POST /api/auth/refresh/` (el front lo hace solo).
+
+Cada rol tiene, por módulo, un nivel: `none` (sin acceso), `view` (solo ver)
+o `manage` (ver y gestionar). Leer exige `view` o `manage`; crear, editar o
+eliminar exige `manage`. El rol Administrador y los superusuarios siempre
+tienen acceso total.
+
+| Módulo (`code`) | Nombre en el front | Endpoints que protege |
+| --- | --- | --- |
+| `users` | Usuarios y roles | `/api/accounts/users/`, `/api/accounts/roles/` |
+| `catalogs` | Catálogos y listas | `/api/catalog/...` (también se pueden **leer** con acceso a `inspections`) |
+| `inspections` | Inspecciones | `/api/inspections/records/` |
+| `incidents`, `maintenance`, `sst`, `documents`, `reports` | Resto de módulos | Reservados para próximas historias |
+
+Las respuestas de error siguen el formato `{"error": {...}}`. Los errores de
+un campo vienen con el nombre del campo; los generales, en `detail` o
+`non_field_errors`:
 
 ```json
-{
-    "username": "EL_USERNAME_REGISTRADO",
-    "password": "LA_CONTRASEÑA_REGISTRADA"
-}
+{"error": {"document": ["Ya existe un usuario con este documento."]}}
 ```
-
-Usa el valor `access` de la respuesta como
-`Authorization: Bearer <access>` en Postman.
-
-Configura PostgreSQL en `.env`; nunca uses el valor de desarrollo de
-`DJANGO_SECRET_KEY` en producción.
-
-## Autenticación
-
-Obtén tokens en `POST /api/auth/login/`:
-
-```json
-{"username": "usuario", "password": "contraseña"}
-```
-
-Usa el token recibido en `Authorization: Bearer <access>`. El access token
-expira según `JWT_ACCESS_MINUTES`; el refresh token se renueva en
-`POST /api/auth/refresh/`.
 
 ## API
 
@@ -91,85 +90,70 @@ Authorization: Bearer <access>
 Content-Type: application/json
 ```
 
-Las operaciones administrativas requieren el rol `administrador` o un
-superusuario. Las respuestas de error siguen el formato
-`{"error": ...}`.
+### Sesión
 
-### Autenticación
+| Método y ruta | Body | Salida |
+| --- | --- | --- |
+| `POST /api/auth/login/` | `{"username": "pgomez", "password": "..."}` (`username` acepta la cédula) | `200`, ver abajo |
+| `POST /api/auth/refresh/` | `{"refresh": "<refresh>"}` | `200`, `{"access": "<nuevo>"}` |
+| `POST /api/accounts/logout/` | `{"refresh": "<refresh>"}` (opcional) | `204`; el refresh queda invalidado |
+| `GET /api/accounts/me/` | Ninguno | `200`, datos del usuario autenticado |
+| `POST /api/accounts/me/change-password/` | `{"current_password": "...", "new_password": "..."}` | `204` |
 
-#### Iniciar sesión
-
-```http
-POST /api/auth/login/
-```
-
-Body:
+Salida del login:
 
 ```json
-{"username": "admin", "password": "Admin12345"}
+{
+    "refresh": "<refresh>",
+    "access": "<access>",
+    "user": {
+        "id": 1,
+        "username": "pgomez",
+        "full_name": "Patricia Gómez",
+        "document": "66851230",
+        "role": "administrador",
+        "role_name": "Administrador",
+        "is_admin": true,
+        "must_change_password": false,
+        "permissions": {"inspections": "manage", "users": "manage", "...": "..."}
+    }
+}
 ```
 
-Salida `200`:
+Las credenciales incorrectas reciben `400` con `Credenciales inválidas.`
+(sin decir si falló el usuario o la contraseña). Una cuenta desactivada,
+con la contraseña correcta, recibe `400` con `Usuario no activo.`.
 
-```json
-{"refresh": "<refresh>", "access": "<access>"}
-```
-
-Una cuenta desactivada recibe `400` con `Usuario no activo.`. Las
-credenciales incorrectas reciben `400` con `Credenciales inválidas.`.
-
-#### Renovar token
-
-```http
-POST /api/auth/refresh/
-```
-
-Body:
-
-```json
-{"refresh": "<refresh>"}
-```
-
-Salida `200`:
-
-```json
-{"access": "<nuevo_access>"}
-```
+Si `must_change_password` es `true` (contraseña temporal), el front pide
+cambiarla con `me/change-password/` antes de continuar.
 
 ### Usuarios
 
-Ruta base: `/api/accounts/users/`. Todas las operaciones requieren
-administrador.
+Ruta base: `/api/accounts/users/`. Módulo `users`.
 
 | Método y ruta | Body | Salida esperada |
 | --- | --- | --- |
-| `GET /api/accounts/users/` | Ninguno | `200`, lista de usuarios |
+| `GET /api/accounts/users/` | Ninguno | `200`, lista (filtros `?role=`, `?is_active=`, `?search=`) |
 | `GET /api/accounts/users/{id}/` | Ninguno | `200`, usuario |
 | `POST /api/accounts/users/` | Ver ejemplo | `201`, usuario creado |
 | `PATCH /api/accounts/users/{id}/` | Campos a cambiar | `200`, usuario actualizado |
-| `DELETE /api/accounts/users/{id}/` | Ninguno | `204`, usuario desactivado |
+| `DELETE /api/accounts/users/{id}/` | Ninguno | `204`, usuario desactivado (conserva su historial) |
+| `POST /api/accounts/users/{id}/reset-password/` | Ninguno | `200`, `{"temporary_password": "..."}` |
 
-Body para crear:
+Body para crear (`password` es opcional):
 
 ```json
 {
     "username": "operario01",
     "full_name": "Operario Uno",
     "document": "100000001",
-    "role": "operario",
-    "password": "Operario123"
+    "role": "operario"
 }
 ```
 
-Para cambiar el rol o reactivar una cuenta:
-
-```json
-{"role": "jefe_taller"}
-```
-
-```json
-{"is_active": true}
-```
+Si no se envía `password`, se genera una contraseña temporal y la respuesta
+la incluye una sola vez en `temporary_password`. Todo usuario creado o con
+contraseña restablecida por un administrador debe cambiarla al ingresar.
 
 Salida de usuario:
 
@@ -180,21 +164,45 @@ Salida de usuario:
     "full_name": "Operario Uno",
     "document": "100000001",
     "role": "operario",
-    "is_active": true
+    "role_name": "Operario",
+    "is_active": true,
+    "must_change_password": true
 }
 ```
 
-#### Cerrar sesión
+No se repiten `username` ni `document`, y un usuario no puede desactivarse a
+sí mismo.
 
-```http
-POST /api/accounts/logout/
+### Roles
+
+Ruta base: `/api/accounts/roles/`. Módulo `users`.
+
+| Método y ruta | Body | Salida esperada |
+| --- | --- | --- |
+| `GET /api/accounts/roles/` | Ninguno | `200`, lista |
+| `POST /api/accounts/roles/` | `{"name": "Auditor", "read_only": true}` | `201`; con `read_only` empieza en `view` en todos los módulos, si no en `none` |
+| `PATCH /api/accounts/roles/{id}/` | `{"name": "..."}` | `200` (los roles base no se renombran) |
+| `PUT /api/accounts/roles/{id}/permissions/` | `{"inspections": "view", "catalogs": "manage"}` | `200`; los módulos omitidos quedan en `none` |
+| `DELETE /api/accounts/roles/{id}/` | Ninguno | `204` si no es base y no tiene usuarios |
+
+Salida de rol:
+
+```json
+{
+    "id": 6,
+    "code": "auditor",
+    "name": "Auditor",
+    "is_base": false,
+    "permissions": {"inspections": "view", "incidents": "view", "...": "..."},
+    "user_count": 0
+}
 ```
 
-Body: ninguno. Salida `204`.
+Los permisos del Administrador no se pueden modificar.
 
 ### Tipos de equipo
 
-Ruta base: `/api/catalog/equipment-types/`. Requiere administrador.
+Ruta base: `/api/catalog/equipment-types/`. Módulo `catalogs`.
 
 | Método y ruta | Body | Salida esperada |
 | --- | --- | --- |
@@ -208,12 +216,16 @@ Ruta base: `/api/catalog/equipment-types/`. Requiere administrador.
 Body:
 
 ```json
-{"name": "Compresor", "is_active": true}
+{"name": "Compresor", "description": "Compresores Kaishan y Atlas Copco", "is_active": true}
 ```
+
+La salida incluye además `equipment_count`. El nombre no se repite (sin
+distinguir mayúsculas). Al eliminar un tipo, su lista de inspección también
+se elimina (o se desactiva si ya tiene inspecciones).
 
 ### Equipos
 
-Ruta base: `/api/catalog/equipments/`. Requiere administrador.
+Ruta base: `/api/catalog/equipments/`. Módulo `catalogs`.
 
 | Método y ruta | Body | Salida esperada |
 | --- | --- | --- |
@@ -221,125 +233,113 @@ Ruta base: `/api/catalog/equipments/`. Requiere administrador.
 | `GET /api/catalog/equipments/{identifier}/` | Ninguno | `200`, equipo |
 | `POST /api/catalog/equipments/` | Ver ejemplo | `201`, equipo creado |
 | `PATCH /api/catalog/equipments/{identifier}/` | Ver ejemplo | `200`, equipo actualizado e historial guardado |
-| `DELETE /api/catalog/equipments/{identifier}/` | Ninguno | `204`, eliminado |
+| `DELETE /api/catalog/equipments/{identifier}/` | Ninguno | `204`, eliminado (`400` si tiene inspecciones) |
 
 Body para crear o modificar:
 
 ```json
 {
-    "identifier": "COMP-001",
+    "identifier": "CAR-1",
     "plate": "ABC123",
     "equipment_type": 1,
     "status": "usable",
-    "model": "Atlas 2026"
+    "model": "Caterpillar 966C",
+    "serial_number": "18B01190",
+    "year": 1990,
+    "hour_meter": "6509"
 }
 ```
+
+`status` puede ser `usable` (Disponible), `en_mantenimiento` (En
+mantenimiento) o `no_usable` (Fuera de servicio). El `identifier` se guarda
+en mayúsculas, no se repite y no se puede cambiar después de crear el equipo;
+la placa tampoco se repite. La salida incluye además `equipment_type_name`,
+`status_display`, `last_modified_by` y `last_modified_at` (último cambio,
+tomado del historial).
 
 ### Categorías e ítems de inspección
 
 Rutas base: `/api/catalog/item-categories/` y `/api/catalog/items/`.
-Requieren administrador.
+Módulo `catalogs`.
 
 | Recurso | Métodos disponibles | Body de creación |
 | --- | --- | --- |
 | Categorías | `GET`, `POST`, `GET/{id}`, `PATCH/{id}`, `DELETE/{id}` | `{"name":"Motor", "is_active":true}` |
 | Ítems | `GET`, `POST`, `GET/{identifier}`, `PATCH/{identifier}`, `DELETE/{identifier}` | `{"identifier":"ITEM-001", "name":"Revisar aceite", "category":1, "is_critical":true, "is_active":true}` |
 
-Las operaciones exitosas de creación devuelven `201`, las modificaciones
-`200` y las eliminaciones lógicas `204`.
-
-Para crear un ítem que luego será incluido en una lista:
-
-```http
-POST /api/catalog/items/
-```
-
-```json
-{
-    "identifier": "ITEM-001",
-    "name": "Revisar nivel de aceite",
-    "category": 1,
-    "is_critical": true,
-    "is_active": true
-}
-```
-
-Salida `201`:
-
-```json
-{
-    "identifier": "ITEM-001",
-    "name": "Revisar nivel de aceite",
-    "category": 1,
-    "is_critical": true,
-    "is_active": true
-}
-```
-
-El valor `identifier` se usa al crear la lista dentro de `item_orders`:
-
-```json
-{
-    "item": "ITEM-001",
-    "position": 1
-}
-```
+Normalmente no hace falta usarlos directamente: al guardar una lista por
+secciones, las categorías e ítems se crean solos.
 
 ### Listas de inspección
 
-Ruta base: `/api/catalog/checklists/`. Requiere administrador.
+Ruta base: `/api/catalog/checklists/`. Módulo `catalogs`.
 
 | Método y ruta | Body | Salida esperada |
 | --- | --- | --- |
 | `GET /api/catalog/checklists/` | Ninguno | `200`, lista |
 | `GET /api/catalog/checklists/{identifier}/` | Ninguno | `200`, lista |
+| `GET /api/catalog/checklists/{identifier}/versions/` | Ninguno | `200`, contenido de cada versión |
 | `POST /api/catalog/checklists/` | Ver ejemplo | `201`, lista versión 1 |
-| `PATCH /api/catalog/checklists/{identifier}/` | Campos a cambiar | `200`, versión incrementada |
-| `DELETE /api/catalog/checklists/{identifier}/` | Ninguno | `204` |
+| `PATCH /api/catalog/checklists/{identifier}/` | Campos a cambiar | `200`, versión incrementada si cambió el contenido |
+| `DELETE /api/catalog/checklists/{identifier}/` | Ninguno | `204` (`400` si tiene inspecciones) |
 
-Body:
+Body (solo `equipment_types` es obligatorio; `identifier` y `name` se generan
+si no se envían):
 
 ```json
 {
-    "identifier": "CHK-COMP-001",
-    "name": "Inspección de compresor",
     "equipment_types": [1],
-    "item_orders": [
-        {"item": "ITEM-001", "position": 1}
-    ],
-    "is_active": true
+    "sections": [
+        {"title": "Motor", "items": [
+            {"text": "Nivel de aceite", "is_critical": true},
+            {"text": "Fugas"}
+        ]},
+        {"title": "Luces", "items": [{"text": "Luces delanteras"}]}
+    ]
 }
 ```
 
-Cada modificación incrementa `version`.
+Cada título de sección es una categoría y cada texto un ítem. También se
+puede enviar el contenido como `item_orders` (`[{"item": "ITEM-001",
+"position": 1}]`) con ítems ya creados.
+
+Reglas:
+
+- Cada tipo de equipo tiene **una sola** lista.
+- Cambiar el nombre o el contenido crea una **versión nueva**. Los ítems no se
+  editan en sitio: si cambia el texto se crea un ítem nuevo, así las
+  inspecciones anteriores conservan las preguntas que respondieron. El
+  contenido de cada versión queda en `versions/`.
 
 ### Registros de inspección
 
-Ruta base: `/api/inspections/records/`.
+Ruta base: `/api/inspections/records/`. Módulo `inspections`.
 
 | Método y ruta | Body | Salida esperada |
 | --- | --- | --- |
 | `GET /api/inspections/records/` | Ninguno | `200`, inspecciones permitidas para el usuario |
 | `GET /api/inspections/records/{id}/` | Ninguno | `200`, inspección |
 | `POST /api/inspections/records/` | Ver ejemplo | `201`, inspección creada |
-| `PATCH /api/inspections/records/{id}/` | Campos a cambiar | `200`, inspección actualizada |
+| `PATCH /api/inspections/records/{id}/` | `{"status": "completed"}` | `200`; solo cambia el estado |
 | `DELETE /api/inspections/records/{id}/` | Ninguno | `204` |
 
 Body para crear una inspección:
 
 ```json
 {
-    "equipment": "COMP-001",
-    "checklist": "CHK-COMP-001",
+    "equipment": "CAR-1",
+    "checklist": "CHK-CARGADORES",
     "status": "completed",
     "responses": [
-        {"item": "ITEM-001", "result": "complies", "notes": "Sin novedades"}
+        {"item": "ITM-06EEB96E11", "result": "complies", "notes": "Sin novedades"}
     ]
 }
 ```
 
-El usuario autenticado se guarda como `performed_by` y la versión actual de
-la lista como `checklist_version`.
+Hay que responder todos los ítems de la versión actual de la lista. El
+usuario autenticado se guarda como `performed_by` y la versión como
+`checklist_version`. Administrador, Jefe de Taller, SST y los roles con
+"Solo ver" en Inspecciones ven todas; los demás, solo las suyas.
 
 ### Documentación interactiva
 
@@ -353,8 +353,9 @@ de `django-simple-history`.
 
 ```text
 config/        configuración, URLs y excepciones
-accounts/      usuarios, roles, autenticación y administración de usuarios
+accounts/      usuarios, roles y permisos, autenticación y contraseñas
 catalog/       tipos, equipos, categorías, ítems y listas versionadas
+               (management/commands/cargar_datos_iniciales.py y fixtures/)
 inspections/   registros y respuestas de inspección
 ```
 
