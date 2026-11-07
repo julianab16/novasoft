@@ -39,6 +39,29 @@ python manage.py runserver
 La API queda en `http://localhost:8000` y la documentación Swagger en
 `http://localhost:8000/api/docs/`.
 
+## Integración continua (CI)
+
+GitHub Actions ejecuta CI en cada push y pull request. El flujo valida la
+configuración y las pruebas del backend con PostgreSQL, calcula su cobertura
+y compila el frontend. El reporte de cobertura del backend queda disponible
+como artefacto de la ejecución.
+
+Para ejecutar las pruebas y consultar el porcentaje de cobertura localmente:
+
+```bash
+cd back
+pip install -r requirements.txt
+coverage run --source=accounts,catalog,inspections,config manage.py test
+coverage report --show-missing
+```
+
+Las pruebas del backend cubren autenticación, usuarios y roles, permisos de
+catálogos, versiones de listas, carga de datos iniciales e inspecciones. La
+ejecución local validada encontró 40 pruebas y 93% de cobertura del backend;
+CI requiere un mínimo de 90%. El porcentaje puede variar al agregar o modificar
+código. Las pruebas crean sus propios datos temporales, incluido un usuario
+con rol Administrador, y no crean usuarios en tu base local.
+
 ### Frontend
 
 Necesita Node.js 18+.
